@@ -1,0 +1,8 @@
+{
+  "name": "siGemaKopo - Sistem Asuhan Kesehatan Gigi & Mulut",
+  "description": "Sistem Informasi Gigi dan Mulut Kopo (siGemaKopo) - Sistem asuhan kesehatan gigi dan mulut individu sesuai standar WHO dan Kemenkes RI.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ]
+}
