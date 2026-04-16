@@ -75,7 +75,7 @@ export const InformedConsent = () => {
     <div className="p-8">
       <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-black text-navy tracking-tight uppercase">Informed Consent</h1>
+          <h1 className="text-3xl font-bold text-navy tracking-tight uppercase">Informed Consent</h1>
           <p className="text-navy/40 font-medium mt-1">SIGEMA KOPO : Sistem Kesehatan Gigi Masyarakat Kopo</p>
         </div>
         <button 

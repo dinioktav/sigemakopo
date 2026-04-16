@@ -22,7 +22,7 @@ export const Security = () => {
   return (
     <div className="p-8">
       <header className="mb-10">
-        <h1 className="text-3xl font-black text-navy tracking-tight uppercase">Pusat Keamanan</h1>
+        <h1 className="text-3xl font-bold text-navy tracking-tight uppercase">Pusat Keamanan</h1>
         <p className="text-navy/40 font-medium mt-1">Kelola privasi, keamanan akun, dan log aktivitas sistem.</p>
       </header>
 

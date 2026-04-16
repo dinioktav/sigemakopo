@@ -115,7 +115,7 @@ export const UserManagement = () => {
               key={t.id}
               onClick={() => setFilter(t.id as any)}
               className={cn(
-                "px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                "px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all",
                 filter === t.id ? "bg-navy text-white shadow-lg" : "text-navy/40 hover:text-navy"
               )}
             >

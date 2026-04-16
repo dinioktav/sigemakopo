@@ -21,7 +21,7 @@ export const Billing = () => {
     <div className="p-8">
       <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-black text-navy tracking-tight uppercase">Manajemen Billing</h1>
+          <h1 className="text-3xl font-bold text-navy tracking-tight uppercase">Manajemen Billing</h1>
           <p className="text-navy/40 font-medium mt-1">SIGEMA KOPO : Sistem Kesehatan Gigi Masyarakat Kopo</p>
         </div>
         <button className="flex items-center justify-center gap-3 px-8 py-4 bg-navy text-gold rounded-2xl font-black hover:bg-navy-light shadow-2xl shadow-navy/40 transition-all uppercase tracking-widest text-xs border border-gold/20">

@@ -274,12 +274,12 @@ export const PatientList = () => {
     <div className="p-8">
       <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-black text-navy tracking-tight uppercase">Master Data Pasien</h1>
+          <h1 className="text-3xl font-bold text-navy tracking-tight uppercase">Master Data Pasien</h1>
           <p className="text-navy/40 font-medium mt-1">SIGEMA KOPO : Sistem Kesehatan Gigi Masyarakat Kopo</p>
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center justify-center gap-3 px-8 py-4 bg-navy text-gold rounded-2xl font-black hover:bg-navy-light shadow-2xl shadow-navy/40 transition-all uppercase tracking-widest text-xs border border-gold/20"
+          className="flex items-center justify-center gap-3 px-8 py-4 bg-navy text-gold rounded-2xl font-bold hover:bg-navy-light shadow-2xl shadow-navy/40 transition-all uppercase tracking-widest text-xs border border-gold/20"
         >
           <Plus size={20} />
           Tambah Pasien Baru
@@ -305,7 +305,7 @@ export const PatientList = () => {
             >
               <header className="p-8 bg-navy text-white flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-black uppercase tracking-tighter">{editingPatientId ? 'Edit Data Pasien' : 'Tambah Pasien Baru'}</h2>
+                  <h2 className="text-2xl font-bold uppercase tracking-tighter">{editingPatientId ? 'Edit Data Pasien' : 'Tambah Pasien Baru'}</h2>
                   <p className="text-gold text-[10px] font-black uppercase tracking-[0.3em] mt-1">{editingPatientId ? 'Pembaruan Master Data Pasien' : 'Registrasi Master Data Pasien'}</p>
                 </div>
                 <button onClick={() => { setIsModalOpen(false); setEditingPatientId(null); }} className="p-2 hover:bg-white/10 rounded-xl transition-all">

@@ -523,7 +523,7 @@ export const DentalHygieneForm = () => {
         <div>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-2 h-8 bg-gold rounded-full"></div>
-            <h1 className="text-4xl font-black text-navy tracking-tighter uppercase">Rekam Dental Hygiene</h1>
+            <h1 className="text-4xl font-bold text-navy tracking-tighter uppercase">Rekam Dental Hygiene</h1>
           </div>
           <p className="text-navy/40 font-black uppercase tracking-[0.3em] text-[10px] ml-5">Sistem Kesehatan Gigi Masyarakat Kopo</p>
         </div>
