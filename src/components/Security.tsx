@@ -17,12 +17,7 @@ export const Security = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [twoFactor, setTwoFactor] = useState(true);
 
-  const activityLogs = [
-    { id: 1, action: 'Login Berhasil', device: 'Chrome on Windows 11', time: '2026-04-02 09:15', status: 'Success' },
-    { id: 2, action: 'Perubahan Password', device: 'Chrome on Windows 11', time: '2026-04-01 14:20', status: 'Success' },
-    { id: 3, action: 'Login Gagal', device: 'Unknown Device', time: '2026-03-30 22:10', status: 'Warning' },
-    { id: 4, action: 'Akses Data Pasien RM-001', device: 'Chrome on Windows 11', time: '2026-03-30 10:05', status: 'Success' },
-  ];
+  const activityLogs: any[] = [];
 
   return (
     <div className="p-8">
@@ -118,11 +113,11 @@ export const Security = () => {
             <div className="relative z-10">
               <h3 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-6">Skor Keamanan Akun</h3>
               <div className="flex items-end gap-2 mb-4">
-                <span className="text-6xl font-black tracking-tighter text-pink">92</span>
+                <span className="text-6xl font-black tracking-tighter text-pink">0</span>
                 <span className="text-xl font-black opacity-40 mb-2">/100</span>
               </div>
               <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden mb-6">
-                <div className="w-[92%] h-full bg-pink"></div>
+                <div className="w-[0%] h-full bg-pink"></div>
               </div>
               <p className="text-[10px] font-bold opacity-60 leading-relaxed">Akun Anda sangat aman. Aktifkan 2FA untuk mencapai skor maksimal.</p>
             </div>

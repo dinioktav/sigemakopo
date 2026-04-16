@@ -12,12 +12,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 
-const MOCK_BILLING = [
-  { id: 'INV-2026-001', patient: 'Budi Santoso', date: '2026-04-01', amount: 'Rp 450.000', status: 'Paid', items: ['Pemeriksaan Rutin', 'Scaling'] },
-  { id: 'INV-2026-002', patient: 'Siti Aminah', date: '2026-04-01', amount: 'Rp 1.200.000', status: 'Unpaid', items: ['Tumpatan Komposit', 'Topikal Fluor'] },
-  { id: 'INV-2026-003', patient: 'Andi Wijaya', date: '2026-03-30', amount: 'Rp 350.000', status: 'Paid', items: ['Konsultasi'] },
-  { id: 'INV-2026-004', patient: 'Dewi Lestari', date: '2026-03-28', amount: 'Rp 850.000', status: 'Paid', items: ['Pencabutan Gigi Sulung'] },
-];
+const MOCK_BILLING: any[] = [];
 
 export const Billing = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -27,9 +22,9 @@ export const Billing = () => {
       <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h1 className="text-3xl font-black text-navy tracking-tight uppercase">Manajemen Billing</h1>
-          <p className="text-navy/40 font-medium mt-1">Kelola invoice dan pembayaran pasien.</p>
+          <p className="text-navy/40 font-medium mt-1">SIGEMA KOPO : Sistem Kesehatan Gigi Masyarakat Kopo</p>
         </div>
-        <button className="flex items-center justify-center gap-3 px-8 py-4 bg-navy text-pink rounded-2xl font-black hover:bg-navy-light shadow-xl shadow-navy/20 transition-all uppercase tracking-widest text-xs">
+        <button className="flex items-center justify-center gap-3 px-8 py-4 bg-navy text-gold rounded-2xl font-black hover:bg-navy-light shadow-2xl shadow-navy/40 transition-all uppercase tracking-widest text-xs border border-gold/20">
           <Plus size={20} />
           Buat Invoice Baru
         </button>

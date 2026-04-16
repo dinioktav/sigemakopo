@@ -1,0 +1,87 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and role information",
+      "type": "object",
+      "properties": {
+        "fullName": {
+          "type": "string",
+          "description": "Full name of the user"
+        },
+        "role": {
+          "type": "string",
+          "description": "User role (e.g., Super Admin, Administrasi Umum, Terapis Gigi dan Mulut, Dosen Pembimbing, Pasien)"
+        },
+        "jenisTenaga": {
+          "type": "string",
+          "description": "Professional type, usually same as role"
+        },
+        "isApproved": {
+          "type": "boolean",
+          "description": "Whether the user account is approved by Super Admin"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "User email address"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Account creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp"
+        }
+      },
+      "required": ["fullName", "role", "email"]
+    },
+    "Patient": {
+      "title": "Patient",
+      "description": "Patient registration data",
+      "type": "object",
+      "properties": {
+        "paymentMethod": { "type": "string", "enum": ["Tunai", "BPJS", "Gratis"] },
+        "nik": { "type": "string", "description": "16-digit NIK" },
+        "name": { "type": "string" },
+        "gender": { "type": "string", "enum": ["Laki-laki", "Perempuan"] },
+        "birthPlace": { "type": "string" },
+        "birthDate": { "type": "string", "format": "date" },
+        "age": { "type": "string" },
+        "address": { "type": "string" },
+        "rt": { "type": "string" },
+        "rw": { "type": "string" },
+        "province": { "type": "string" },
+        "city": { "type": "string" },
+        "district": { "type": "string" },
+        "subDistrict": { "type": "string" },
+        "maritalStatus": { "type": "string", "enum": ["Belum Menikah", "Menikah", "Duda", "Janda"] },
+        "education": { "type": "string" },
+        "occupation": { "type": "string" },
+        "phone": { "type": "string" },
+        "guardianRelation": { "type": "string" },
+        "guardianNik": { "type": "string" },
+        "guardianName": { "type": "string" },
+        "guardianGender": { "type": "string" },
+        "guardianBirthDate": { "type": "string", "format": "date" },
+        "guardianAddress": { "type": "string" },
+        "guardianPhone": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["nik", "name", "birthDate"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Collection of user profiles"
+    },
+    "/patients/{patientId}": {
+      "schema": "Patient",
+      "description": "Collection of patient records"
+    }
+  }
+}

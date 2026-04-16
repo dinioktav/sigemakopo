@@ -13,17 +13,27 @@ import {
   Bell,
   Search,
   Plus,
+  ChevronRight,
   Activity,
   TrendingUp,
   AlertTriangle,
   Receipt,
   FileCheck,
-  Video
+  Video,
+  RefreshCw,
+  Camera,
+  User,
+  Briefcase,
+  Save
 } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/src/lib/utils';
 import { Login } from './components/Login';
+import { auth, db } from './lib/firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { GoogleGenAI } from "@google/genai";
 import { 
   BarChart, 
   Bar, 
@@ -47,35 +57,194 @@ import { InformedConsent } from './components/InformedConsent';
 import { Appointments } from './components/Appointments';
 import { Security } from './components/Security';
 import { DentalEducation } from './components/DentalEducation';
+import { UserManagement } from './components/UserManagement';
 
-const MOCK_CHART_DATA = [
-  { name: 'Jan', dmft: 4.5, ohis: 1.2 },
-  { name: 'Feb', dmft: 4.2, ohis: 1.1 },
-  { name: 'Mar', dmft: 4.0, ohis: 1.0 },
-  { name: 'Apr', dmft: 3.8, ohis: 0.9 },
-  { name: 'May', dmft: 3.5, ohis: 0.8 },
-];
+const MOCK_CHART_DATA: any[] = [];
 
-const MOCK_PIE_DATA = [
-  { name: 'Karies', value: 45, color: '#EF4444' },
-  { name: 'Gingivitis', value: 25, color: '#F59E0B' },
-  { name: 'Periodontitis', value: 15, color: '#8B5CF6' },
-  { name: 'Sehat', value: 15, color: '#10B981' },
-];
+const MOCK_PIE_DATA: any[] = [];
+
+const PERMISSIONS: Record<string, string[]> = {
+  'Super Admin': ['dashboard', 'patients', 'records', 'informed-consent', 'billing', 'education', 'appointments', 'reports', 'security', 'settings'],
+  'Administrasi Umum': ['dashboard', 'patients', 'billing', 'appointments', 'reports'],
+  'Terapis Gigi dan Mulut': ['dashboard', 'patients', 'records', 'informed-consent', 'billing', 'education', 'appointments', 'reports'],
+  'Dosen Pembimbing': ['dashboard', 'patients', 'records', 'informed-consent', 'billing', 'education', 'appointments', 'reports'],
+  'Pasien': ['appointments', 'education'],
+};
+
+const ProfilePage = ({ userData, setUserData }: { userData: any, setUserData: any }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [formData, setFormData] = useState({
+    ...userData,
+    jenisTenaga: userData.jenisTenaga || userData.role
+  });
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const user = auth.currentUser;
+      if (user) {
+        await setDoc(doc(db, 'users', user.uid), {
+          fullName: formData.fullName,
+          jenisTenaga: formData.jenisTenaga,
+          photoURL: formData.photoURL,
+          role: userData.role, // Keep system role unchanged
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+        
+        setUserData(formData);
+        setIsEditing(false);
+        alert("Profil berhasil diperbarui!");
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      alert("Gagal memperbarui profil.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="p-8">
+      <header className="mb-10">
+        <h1 className="text-3xl font-black text-navy tracking-tight uppercase">Profil Saya</h1>
+        <p className="text-navy/40 font-medium mt-1">Kelola informasi pribadi dan identitas profesional Anda.</p>
+      </header>
+
+      <div className="max-w-4xl">
+        <div className="glass-card p-10 rounded-[3rem] relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gold/5 rounded-full blur-3xl -z-10"></div>
+          
+          <div className="flex flex-col md:flex-row gap-12 items-start">
+            <div className="relative group">
+              <div className="w-48 h-48 rounded-[3rem] bg-navy overflow-hidden border-4 border-white shadow-2xl relative">
+                <img 
+                  src={formData.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${formData.fullName}`} 
+                  alt="Profile" 
+                  className="w-full h-full object-cover"
+                />
+                <label className="absolute inset-0 bg-navy/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer">
+                  <Camera className="text-gold mb-2" size={32} />
+                  <span className="text-[10px] font-black text-white uppercase tracking-widest">Ganti Foto</span>
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    accept="image/*" 
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setFormData({ ...formData, photoURL: reader.result as string });
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+              <div className="absolute -bottom-4 -right-4 w-12 h-12 bg-gold rounded-2xl flex items-center justify-center text-navy shadow-xl border-4 border-white">
+                <User size={20} />
+              </div>
+            </div>
+
+            <div className="flex-1 space-y-8 w-full">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest ml-4">Nama Lengkap</label>
+                  <div className="relative">
+                    <User className="absolute left-6 top-1/2 -translate-y-1/2 text-navy/20" size={18} />
+                    <input 
+                      type="text" 
+                      disabled={!isEditing}
+                      value={formData.fullName}
+                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                      className="w-full pl-14 pr-8 py-4 bg-navy-50/50 border-2 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-2xl text-sm transition-all font-bold disabled:opacity-60" 
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest ml-4">Jenis Tenaga (Informasi)</label>
+                  <div className="relative">
+                    <Briefcase className="absolute left-6 top-1/2 -translate-y-1/2 text-navy/20" size={18} />
+                    <select 
+                      disabled={!isEditing}
+                      value={formData.jenisTenaga}
+                      onChange={(e) => setFormData({ ...formData, jenisTenaga: e.target.value })}
+                      className="w-full pl-14 pr-8 py-4 bg-navy-50/50 border-2 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-2xl text-sm transition-all font-bold disabled:opacity-60 appearance-none"
+                    >
+                      <option value="Administrasi Umum">Administrasi Umum</option>
+                      <option value="Terapis Gigi dan Mulut">Terapis Gigi dan Mulut</option>
+                      <option value="Dosen Pembimbing">Dosen Pembimbing</option>
+                      <option value="Pasien">Pasien</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 bg-navy-50/30 rounded-3xl border border-navy/5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-black text-navy/40 uppercase tracking-widest">System Role (Read Only)</p>
+                    <p className="text-sm font-black text-navy uppercase tracking-tight mt-1">{userData.role}</p>
+                  </div>
+                  <ShieldCheck className="text-gold" size={24} />
+                </div>
+                <p className="text-[9px] text-navy/30 font-bold uppercase tracking-widest mt-4 italic">* Role sistem menentukan hak akses Anda dan hanya dapat diubah oleh Administrator.</p>
+              </div>
+
+              <div className="pt-6 flex gap-4">
+                {isEditing ? (
+                  <>
+                    <button 
+                      onClick={handleSave}
+                      disabled={isSaving}
+                      className="px-10 py-4 bg-navy text-gold rounded-2xl font-black hover:bg-navy-light shadow-xl shadow-navy/20 transition-all uppercase tracking-widest text-xs disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {isSaving ? <RefreshCw className="animate-spin" size={16} /> : <Save size={16} />}
+                      Simpan Perubahan
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setFormData(userData);
+                        setIsEditing(false);
+                      }}
+                      disabled={isSaving}
+                      className="px-10 py-4 bg-white border-2 border-navy/5 text-navy/40 rounded-2xl font-black hover:border-pink hover:text-pink transition-all uppercase tracking-widest text-xs disabled:opacity-50"
+                    >
+                      Batal
+                    </button>
+                  </>
+                ) : (
+                  <button 
+                    onClick={() => setIsEditing(true)}
+                    className="px-10 py-4 bg-navy text-gold rounded-2xl font-black hover:bg-navy-light shadow-xl shadow-navy/20 transition-all uppercase tracking-widest text-xs"
+                  >
+                    Edit Profil
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Dashboard = () => (
   <div className="p-8">
     <header className="mb-10">
-      <h1 className="text-3xl font-black text-navy tracking-tight uppercase">Dashboard siGemaKopo</h1>
-      <p className="text-navy/40 font-medium mt-1">Ringkasan operasional asuhan kesehatan gigi hari ini.</p>
+      <h1 className="text-3xl font-black text-navy tracking-tight uppercase">Dashboard SIGEMA KOPO</h1>
+      <p className="text-navy/40 font-medium mt-1">Sistem Kesehatan Gigi Masyarakat Kopo</p>
     </header>
     
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
       {[
-        { label: 'Total Pasien', value: '1,284', icon: Users, color: 'bg-navy' },
-        { label: 'Kunjungan Hari Ini', value: '24', icon: Calendar, color: 'bg-pink' },
-        { label: 'Billing Pending', value: 'Rp 4.2M', icon: Receipt, color: 'bg-navy-light' },
-        { label: 'Consent Signed', value: '98%', icon: FileCheck, color: 'bg-pink-light' },
+        { label: 'Total Pasien', value: '0', icon: Users, color: 'bg-navy' },
+        { label: 'Kunjungan Hari Ini', value: '0', icon: Calendar, color: 'bg-pink' },
+        { label: 'Billing Pending', value: 'Rp 0', icon: Receipt, color: 'bg-navy-light' },
+        { label: 'Consent Signed', value: '0%', icon: FileCheck, color: 'bg-pink-light' },
       ].map((stat, i) => (
         <div key={i} className="glass-card p-8 rounded-[2.5rem] flex items-center gap-6 group hover:scale-[1.02] transition-all duration-300">
           <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform group-hover:scale-110", stat.color)}>
@@ -158,79 +327,155 @@ const Dashboard = () => (
   </div>
 );
 
-const Reports = () => (
-  <div className="p-8">
-    <header className="mb-10">
-      <h1 className="text-3xl font-black text-navy tracking-tight uppercase">Pelaporan Agregat</h1>
-      <p className="text-navy/40 font-medium mt-1">Analisis data kesehatan gigi dan mulut populasi.</p>
-    </header>
+const Reports = () => {
+  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
-      {[
-        { label: 'Rata-rata OHI-S', value: '1.2', status: 'Baik', color: 'text-pink', bg: 'bg-pink-soft' },
-        { label: 'Rata-rata DMF-T', value: '4.2', status: 'Sedang', color: 'text-navy', bg: 'bg-navy-50' },
-        { label: 'Cakupan Pelayanan', value: '85%', status: 'Meningkat', color: 'text-pink-light', bg: 'bg-pink-soft/50' },
-      ].map((item, i) => (
-        <div key={i} className="glass-card p-8 rounded-[2.5rem]">
-          <p className="text-xs text-navy/30 font-black uppercase tracking-widest mb-2">{item.label}</p>
-          <div className="flex items-end gap-3">
-            <p className="text-4xl font-black text-navy tracking-tighter">{item.value}</p>
-            <span className={cn("text-[10px] font-black px-3 py-1 rounded-full mb-1 uppercase tracking-widest", item.bg, item.color)}>
-              {item.status}
-            </span>
+  const handleAIAnalysis = async () => {
+    setIsAnalyzing(true);
+    setAiAnalysis(null);
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: `Analisis data kesehatan gigi berikut untuk populasi:
+        Data DMF-T: ${JSON.stringify(MOCK_CHART_DATA.map(d => ({ bulan: d.name, dmft: d.dmft })))}
+        Data OHI-S: ${JSON.stringify(MOCK_CHART_DATA.map(d => ({ bulan: d.name, ohis: d.ohis })))}
+        Prevalensi Penyakit: ${JSON.stringify(MOCK_PIE_DATA)}
+        
+        Berikan ringkasan eksekutif, tren kesehatan, dan rekomendasi tindakan preventif dalam format markdown yang profesional dan mudah dibaca.`,
+      });
+      setAiAnalysis(response.text || "Gagal mendapatkan analisis.");
+    } catch (error) {
+      console.error("AI Analysis Error:", error);
+      setAiAnalysis("Terjadi kesalahan saat melakukan analisis AI.");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  return (
+    <div className="p-8">
+      <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <h1 className="text-3xl font-black text-navy tracking-tight uppercase">Pelaporan Agregat</h1>
+          <p className="text-navy/40 font-medium mt-1">Analisis data kesehatan gigi dan mulut populasi.</p>
+        </div>
+        <button 
+          onClick={handleAIAnalysis}
+          disabled={isAnalyzing}
+          className="flex items-center justify-center gap-3 px-8 py-4 bg-pink text-white rounded-2xl font-black hover:bg-pink-dark shadow-xl shadow-pink/20 transition-all uppercase tracking-widest text-xs disabled:opacity-50"
+        >
+          {isAnalyzing ? <RefreshCw className="animate-spin" size={20} /> : <Activity size={20} />}
+          {isAnalyzing ? 'Menganalisis...' : 'Analisis AI'}
+        </button>
+      </header>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+        {[
+          { label: 'Rata-rata OHI-S', value: '0.0', status: 'N/A', color: 'text-pink', bg: 'bg-pink-soft' },
+          { label: 'Rata-rata DMF-T', value: '0.0', status: 'N/A', color: 'text-navy', bg: 'bg-navy-50' },
+          { label: 'Cakupan Pelayanan', value: '0%', status: 'N/A', color: 'text-pink-light', bg: 'bg-pink-soft/50' },
+        ].map((item, i) => (
+          <div key={i} className="glass-card p-8 rounded-[2.5rem]">
+            <p className="text-xs text-navy/30 font-black uppercase tracking-widest mb-2">{item.label}</p>
+            <div className="flex items-end gap-3">
+              <p className="text-4xl font-black text-navy tracking-tighter">{item.value}</p>
+              <span className={cn("text-[10px] font-black px-3 py-1 rounded-full mb-1 uppercase tracking-widest", item.bg, item.color)}>
+                {item.status}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+        <div className="glass-card p-10 rounded-[3rem]">
+          <h3 className="font-black text-navy uppercase tracking-widest text-sm mb-10">Laporan Epidemiologi (WHO Standard)</h3>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={MOCK_CHART_DATA}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b', fontWeight: 700 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b', fontWeight: 700 }} />
+                <Tooltip 
+                  contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgba(15, 23, 42, 0.1)', padding: '16px' }}
+                />
+                <Line type="monotone" dataKey="dmft" stroke="#0f172a" strokeWidth={4} dot={{ r: 6, fill: '#0f172a', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
+                <Line type="monotone" dataKey="ohis" stroke="#db2777" strokeWidth={4} dot={{ r: 6, fill: '#db2777', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </div>
-      ))}
-    </div>
 
-    <div className="glass-card p-10 rounded-[3rem]">
-      <h3 className="font-black text-navy uppercase tracking-widest text-sm mb-10">Laporan Epidemiologi (WHO Standard)</h3>
-      <div className="h-80">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={MOCK_CHART_DATA}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b', fontWeight: 700 }} />
-            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b', fontWeight: 700 }} />
-            <Tooltip 
-              contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgba(15, 23, 42, 0.1)', padding: '16px' }}
-            />
-            <Line type="monotone" dataKey="dmft" stroke="#0f172a" strokeWidth={4} dot={{ r: 6, fill: '#0f172a', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
-            <Line type="monotone" dataKey="ohis" stroke="#db2777" strokeWidth={4} dot={{ r: 6, fill: '#db2777', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
-          </LineChart>
-        </ResponsiveContainer>
+        <AnimatePresence>
+          {aiAnalysis && (
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="glass-card p-10 rounded-[3rem] border-2 border-pink/20"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-pink rounded-xl flex items-center justify-center text-white shadow-lg">
+                  <Activity size={20} />
+                </div>
+                <h3 className="font-black text-navy uppercase tracking-widest text-sm">Hasil Analisis AI</h3>
+              </div>
+              <div className="prose prose-sm prose-navy max-w-none text-navy/70 font-medium leading-relaxed">
+                {aiAnalysis.split('\n').map((line, i) => (
+                  <p key={i} className="mb-2">{line}</p>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
-const SidebarItem = ({ to, icon: Icon, label, active }: { to: string, icon: any, label: string, active: boolean }) => (
-  <Link 
-    to={to}
-    className={cn(
-      "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group",
-      active 
-        ? "bg-pink text-white shadow-lg shadow-pink/20" 
-        : "text-navy/60 hover:bg-pink-soft hover:text-pink"
-    )}
-  >
-    <Icon size={20} className={cn(active ? "text-white" : "group-hover:text-pink")} />
-    <span className="font-medium">{label}</span>
-  </Link>
-);
+const SidebarItem = ({ to, icon: Icon, label, active, permission, userRole }: { to: string, icon: any, label: string, active: boolean, permission: string, userRole: string }) => {
+  const hasPermission = PERMISSIONS[userRole]?.includes(permission);
+  
+  if (!hasPermission) return null;
 
-const SettingsPage = () => (
+  return (
+    <Link 
+      to={to}
+      className={cn(
+        "flex items-center gap-4 px-6 py-4 rounded-2xl transition-all duration-500 group relative overflow-hidden",
+        active 
+          ? "bg-navy text-white shadow-2xl shadow-navy/40" 
+          : "text-navy/40 hover:bg-navy-50 hover:text-navy"
+      )}
+    >
+      {active && (
+        <motion.div 
+          layoutId="sidebar-active"
+          className="absolute left-0 top-0 bottom-0 w-1 bg-gold"
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        />
+      )}
+      <Icon size={20} className={cn("transition-transform duration-500", active ? "text-gold scale-110" : "group-hover:scale-110")} />
+      <span className={cn("text-xs font-black uppercase tracking-[0.2em] transition-all", active ? "translate-x-1" : "")}>{label}</span>
+    </Link>
+  );
+};
+
+const SettingsPage = ({ userRole }: { userRole: string }) => (
   <div className="p-8">
     <header className="mb-10">
       <h1 className="text-3xl font-black text-navy tracking-tight uppercase">Pengaturan Sistem</h1>
       <p className="text-navy/40 font-medium mt-1">Konfigurasi klinik dan preferensi aplikasi.</p>
     </header>
     
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
       <div className="glass-card p-10 rounded-[3rem]">
         <h3 className="text-xl font-black text-navy uppercase tracking-tight mb-8">Profil Klinik</h3>
         <div className="space-y-6">
           {[
-            { label: 'Nama Klinik', value: 'siGemaKopo Dental Care' },
+            { label: 'Nama Klinik', value: 'SIGEMA KOPO' },
+            { label: 'Tagline', value: 'Sistem Kesehatan Gigi Masyarakat Kopo' },
             { label: 'Alamat', value: 'Jl. Kopo No. 123, Bandung' },
             { label: 'Telepon', value: '022-1234567' },
           ].map((field, i) => (
@@ -241,28 +486,58 @@ const SettingsPage = () => (
           ))}
         </div>
       </div>
-      <div className="glass-card p-10 rounded-[3rem]">
-        <h3 className="text-xl font-black text-navy uppercase tracking-tight mb-8">Preferensi Sistem</h3>
-        <div className="space-y-6">
-          {[
-            { label: 'Bahasa', value: 'Bahasa Indonesia' },
-            { label: 'Zona Waktu', value: 'WIB (UTC+7)' },
-          ].map((field, i) => (
-            <div key={i} className="space-y-2">
-              <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest ml-4">{field.label}</label>
-              <select className="w-full px-8 py-4 bg-navy-50/50 border-2 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-2xl text-sm transition-all font-bold appearance-none">
-                <option>{field.value}</option>
-              </select>
-            </div>
-          ))}
+
+      <div className="space-y-8">
+        <div className="glass-card p-10 rounded-[3rem]">
+          <h3 className="text-xl font-black text-navy uppercase tracking-tight mb-8">Preferensi Sistem</h3>
+          <div className="space-y-6">
+            {[
+              { label: 'Bahasa', value: 'Bahasa Indonesia' },
+              { label: 'Zona Waktu', value: 'WIB (UTC+7)' },
+            ].map((field, i) => (
+              <div key={i} className="space-y-2">
+                <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest ml-4">{field.label}</label>
+                <select className="w-full px-8 py-4 bg-navy-50/50 border-2 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-2xl text-sm transition-all font-bold appearance-none">
+                  <option>{field.value}</option>
+                </select>
+              </div>
+            ))}
+          </div>
         </div>
+
+        {userRole === 'Super Admin' && (
+          <div className="glass-card p-10 rounded-[3rem] border-2 border-gold/20">
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-xl font-black text-navy uppercase tracking-tight">Manajemen Pengguna</h3>
+              <ShieldCheck className="text-gold" size={24} />
+            </div>
+            <UserManagement />
+          </div>
+        )}
       </div>
     </div>
   </div>
 );
 
-const Layout = ({ children, userData, onLogout }: { children: React.ReactNode, userData: { role: string, fullName: string }, onLogout: () => void }) => {
+const ProtectedRoute = ({ children, permission, userRole }: { children: React.ReactNode, permission: string, userRole: string }) => {
+  const hasPermission = PERMISSIONS[userRole]?.includes(permission);
+  if (!hasPermission) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center p-8 text-center">
+        <div className="w-20 h-20 bg-pink-soft text-pink rounded-[2rem] flex items-center justify-center mb-6 shadow-xl shadow-pink/10">
+          <ShieldCheck size={40} />
+        </div>
+        <h2 className="text-2xl font-black text-navy uppercase tracking-tighter mb-2">Akses Terbatas</h2>
+        <p className="text-navy/40 font-medium max-w-md">Maaf, akun Anda tidak memiliki izin untuk mengakses modul ini. Silakan hubungi administrator jika Anda merasa ini adalah kesalahan.</p>
+      </div>
+    );
+  }
+  return <>{children}</>;
+};
+
+const Layout = ({ children, userData, setUserData, onLogout }: { children: React.ReactNode, userData: { role: string, fullName: string, photoURL: string, jenisTenaga: string }, setUserData: any, onLogout: () => void }) => {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const location = useLocation();
 
   return (
@@ -274,31 +549,31 @@ const Layout = ({ children, userData, onLogout }: { children: React.ReactNode, u
       )}>
         <div className="h-full flex flex-col p-6">
           <div className="flex items-center gap-4 mb-12 px-2">
-            <div className="w-12 h-12 bg-navy rounded-2xl flex items-center justify-center text-pink font-black text-2xl shadow-xl shadow-navy/20 transform -rotate-6">
+            <div className="w-12 h-12 bg-navy rounded-2xl flex items-center justify-center text-gold font-black text-2xl shadow-2xl shadow-navy/40 transform -rotate-6 border border-gold/20">
               S
             </div>
             <div>
-              <h2 className="text-xl font-black text-navy tracking-tighter uppercase leading-none">siGemaKopo</h2>
-              <p className="text-[8px] font-black text-pink uppercase tracking-[0.3em] mt-1">Dental Care</p>
+              <h2 className="text-xl font-black text-navy tracking-tighter uppercase leading-none">SIGEMA KOPO</h2>
+              <p className="text-[8px] font-black text-gold uppercase tracking-[0.3em] mt-1">Sistem Kesehatan Gigi Masyarakat Kopo</p>
             </div>
           </div>
 
           <nav className="flex-1 space-y-2 overflow-y-auto custom-scrollbar">
             <p className="text-[10px] font-black text-navy/20 uppercase tracking-[0.2em] mb-4 ml-4">Menu Utama</p>
-            <SidebarItem to="/" icon={LayoutDashboard} label="Dashboard" active={location.pathname === '/'} />
-            <SidebarItem to="/patients" icon={Users} label="Data Pasien" active={location.pathname.startsWith('/patients')} />
-            <SidebarItem to="/records" icon={ClipboardList} label="Rekam Dental" active={location.pathname.startsWith('/records')} />
-            <SidebarItem to="/informed-consent" icon={FileCheck} label="Informed Consent" active={location.pathname === '/informed-consent'} />
-            <SidebarItem to="/billing" icon={Receipt} label="Billing" active={location.pathname === '/billing'} />
-            <SidebarItem to="/education" icon={Video} label="Edukasi Gigi" active={location.pathname === '/education'} />
-            <SidebarItem to="/appointments" icon={Calendar} label="Jadwal" active={location.pathname === '/appointments'} />
-            <SidebarItem to="/reports" icon={BarChart3} label="Pelaporan" active={location.pathname === '/reports'} />
-            <SidebarItem to="/security" icon={ShieldCheck} label="Keamanan" active={location.pathname === '/security'} />
+            <SidebarItem to="/" icon={LayoutDashboard} label="Dashboard" active={location.pathname === '/'} permission="dashboard" userRole={userData.role} />
+            <SidebarItem to="/patients" icon={Users} label="Data Pasien" active={location.pathname.startsWith('/patients')} permission="patients" userRole={userData.role} />
+            <SidebarItem to="/records" icon={ClipboardList} label="Rekam Dental" active={location.pathname.startsWith('/records')} permission="records" userRole={userData.role} />
+            <SidebarItem to="/informed-consent" icon={FileCheck} label="Informed Consent" active={location.pathname === '/informed-consent'} permission="informed-consent" userRole={userData.role} />
+            <SidebarItem to="/billing" icon={Receipt} label="Billing" active={location.pathname === '/billing'} permission="billing" userRole={userData.role} />
+            <SidebarItem to="/education" icon={Video} label="Edukasi Gigi" active={location.pathname === '/education'} permission="education" userRole={userData.role} />
+            <SidebarItem to="/appointments" icon={Calendar} label="Jadwal" active={location.pathname === '/appointments'} permission="appointments" userRole={userData.role} />
+            <SidebarItem to="/reports" icon={BarChart3} label="Pelaporan" active={location.pathname === '/reports'} permission="reports" userRole={userData.role} />
+            <SidebarItem to="/security" icon={ShieldCheck} label="Keamanan" active={location.pathname === '/security'} permission="security" userRole={userData.role} />
           </nav>
 
           <div className="pt-6 border-t border-navy/5 space-y-2">
             <p className="text-[10px] font-black text-navy/20 uppercase tracking-[0.2em] mb-4 ml-4">Sistem</p>
-            <SidebarItem to="/settings" icon={Settings} label="Pengaturan" active={location.pathname === '/settings'} />
+            <SidebarItem to="/settings" icon={Settings} label="Pengaturan" active={location.pathname === '/settings'} permission="settings" userRole={userData.role} />
           </div>
         </div>
       </aside>
@@ -334,24 +609,73 @@ const Layout = ({ children, userData, onLogout }: { children: React.ReactNode, u
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-pink rounded-full border-2 border-white"></span>
             </button>
             <div className="h-8 w-px bg-navy/5 mx-2"></div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 relative">
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-black text-navy leading-none">{userData.fullName}</p>
-                <p className="text-[10px] font-bold text-pink mt-1 uppercase tracking-wider">{userData.role}</p>
+                <p className="text-[10px] font-bold text-gold mt-1 uppercase tracking-wider">{userData.role}</p>
               </div>
               <div className="flex items-center gap-2">
                 <button 
-                  className="w-10 h-10 rounded-full bg-pink-soft border-2 border-white shadow-sm overflow-hidden hover:opacity-80 transition-all"
+                  onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                  className="w-10 h-10 rounded-full bg-navy border-2 border-white shadow-lg overflow-hidden hover:scale-105 transition-all"
                 >
-                  <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.fullName}`} alt="User" referrerPolicy="no-referrer" />
+                  <img 
+                    src={userData.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.fullName}`} 
+                    alt="User" 
+                    referrerPolicy="no-referrer" 
+                    className="w-full h-full object-cover"
+                  />
                 </button>
-                <button 
-                  onClick={onLogout}
-                  className="p-2 text-navy/20 hover:text-pink transition-all bg-white rounded-lg border border-navy/5 shadow-sm"
-                  title="Keluar"
-                >
-                  <LogOut size={18} />
-                </button>
+                
+                <AnimatePresence>
+                  {isProfileMenuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className="absolute right-0 top-14 w-64 bg-white border border-navy/10 rounded-3xl shadow-2xl p-6 z-50"
+                    >
+                      <div className="flex flex-col items-center text-center mb-6">
+                        <div className="w-20 h-20 rounded-3xl bg-navy-50 p-1 mb-4">
+                          <img 
+                            src={userData.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.fullName}`} 
+                            alt="User" 
+                            className="w-full h-full object-cover rounded-2xl"
+                          />
+                        </div>
+                        <h4 className="text-sm font-black text-navy uppercase tracking-tight">{userData.fullName}</h4>
+                        <p className="text-[10px] font-bold text-gold uppercase tracking-[0.2em] mt-1">{userData.role}</p>
+                      </div>
+                      
+                      <div className="space-y-1 mb-6">
+                        <Link 
+                          to="/profile"
+                          onClick={() => setIsProfileMenuOpen(false)}
+                          className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-navy-50 text-navy/60 hover:text-navy transition-all text-xs font-black uppercase tracking-widest"
+                        >
+                          <Settings size={16} className="text-gold" />
+                          Profil Saya
+                        </Link>
+                        <Link 
+                          to="/security"
+                          onClick={() => setIsProfileMenuOpen(false)}
+                          className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-navy-50 text-navy/60 hover:text-navy transition-all text-xs font-black uppercase tracking-widest"
+                        >
+                          <ShieldCheck size={16} className="text-gold" />
+                          Keamanan
+                        </Link>
+                      </div>
+                      
+                      <button 
+                        onClick={onLogout}
+                        className="w-full flex items-center justify-center gap-3 p-4 bg-pink-soft text-pink rounded-2xl hover:bg-pink hover:text-white transition-all text-xs font-black uppercase tracking-widest"
+                      >
+                        <LogOut size={16} />
+                        Keluar
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           </div>
@@ -367,16 +691,17 @@ const Layout = ({ children, userData, onLogout }: { children: React.ReactNode, u
               transition={{ duration: 0.2 }}
             >
               <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/patients" element={<PatientList />} />
-                <Route path="/records" element={<DentalHygieneForm />} />
-                <Route path="/informed-consent" element={<InformedConsent />} />
-                <Route path="/billing" element={<Billing />} />
-                <Route path="/education" element={<DentalEducation />} />
-                <Route path="/appointments" element={<Appointments />} />
-                <Route path="/reports" element={<Reports />} />
-                <Route path="/security" element={<Security />} />
-                <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/" element={<ProtectedRoute permission="dashboard" userRole={userData.role}><Dashboard /></ProtectedRoute>} />
+                <Route path="/profile" element={<ProfilePage userData={userData} setUserData={setUserData} />} />
+                <Route path="/patients" element={<ProtectedRoute permission="patients" userRole={userData.role}><PatientList /></ProtectedRoute>} />
+                <Route path="/records" element={<ProtectedRoute permission="records" userRole={userData.role}><DentalHygieneForm /></ProtectedRoute>} />
+                <Route path="/informed-consent" element={<ProtectedRoute permission="informed-consent" userRole={userData.role}><InformedConsent /></ProtectedRoute>} />
+                <Route path="/billing" element={<ProtectedRoute permission="billing" userRole={userData.role}><Billing /></ProtectedRoute>} />
+                <Route path="/education" element={<ProtectedRoute permission="education" userRole={userData.role}><DentalEducation /></ProtectedRoute>} />
+                <Route path="/appointments" element={<ProtectedRoute permission="appointments" userRole={userData.role}><Appointments /></ProtectedRoute>} />
+                <Route path="/reports" element={<ProtectedRoute permission="reports" userRole={userData.role}><Reports /></ProtectedRoute>} />
+                <Route path="/security" element={<ProtectedRoute permission="security" userRole={userData.role}><Security /></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute permission="settings" userRole={userData.role}><SettingsPage userRole={userData.role} /></ProtectedRoute>} />
               </Routes>
             </motion.div>
           </AnimatePresence>
@@ -388,7 +713,78 @@ const Layout = ({ children, userData, onLogout }: { children: React.ReactNode, u
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userData, setUserData] = useState({ role: '', fullName: '' });
+  const [userData, setUserData] = useState({ 
+    role: 'Administrasi Umum', 
+    fullName: 'Dini Nur Oktaviani', 
+    photoURL: '',
+    jenisTenaga: 'Administrasi Umum',
+    isApproved: true
+  });
+  const [isAuthReady, setIsAuthReady] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        let userRole = 'Pasien';
+        let jenisTenaga = 'Pasien';
+        let isApproved = true;
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            userRole = userDoc.data().role;
+            jenisTenaga = userDoc.data().jenisTenaga || userRole;
+            isApproved = userDoc.data().isApproved ?? true;
+          } else if (user.email?.toLowerCase() === 'nuroktav.do@gmail.com') {
+            userRole = 'Super Admin';
+            jenisTenaga = 'Super Admin';
+            isApproved = true;
+            // Auto-save owner profile
+            await setDoc(doc(db, 'users', user.uid), {
+              fullName: user.displayName || 'Owner',
+              role: 'Super Admin',
+              jenisTenaga: 'Super Admin',
+              email: user.email,
+              isApproved: true,
+              createdAt: new Date().toISOString()
+            });
+          }
+        } catch (error) {
+          console.error("Error fetching user role:", error);
+        }
+
+        setIsAuthenticated(true);
+        setUserData({
+          role: userRole,
+          fullName: user.displayName || 'User',
+          photoURL: user.photoURL || '',
+          jenisTenaga: jenisTenaga,
+          isApproved: isApproved
+        });
+      } else {
+        setIsAuthenticated(false);
+        setUserData({ role: '', fullName: '', photoURL: '', jenisTenaga: '', isApproved: false });
+      }
+      setIsAuthReady(true);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setIsAuthenticated(false);
+    } catch (error) {
+      console.error("Logout Error:", error);
+    }
+  };
+
+  if (!isAuthReady) {
+    return (
+      <div className="min-h-screen bg-navy flex items-center justify-center dental-pattern">
+        <RefreshCw className="text-pink animate-spin" size={48} />
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return <Login onLogin={(data) => {
@@ -397,9 +793,30 @@ export default function App() {
     }} />;
   }
 
+  if (!userData.isApproved) {
+    return (
+      <div className="min-h-screen bg-navy flex items-center justify-center p-6 dental-pattern">
+        <div className="bg-white/95 backdrop-blur-xl w-full max-w-md rounded-[3rem] shadow-2xl p-12 text-center border border-white/20">
+          <div className="w-24 h-24 bg-navy-50 text-gold rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-xl">
+            <ShieldCheck size={48} />
+          </div>
+          <h1 className="text-3xl font-black text-navy uppercase tracking-tighter mb-4">Menunggu Persetujuan</h1>
+          <p className="text-navy/60 font-medium mb-8">Akun Anda sedang ditinjau oleh Super Admin. Anda akan mendapatkan akses penuh setelah akun Anda disetujui.</p>
+          <button 
+            onClick={handleLogout}
+            className="w-full py-5 bg-navy text-white rounded-2xl font-black hover:bg-navy-light shadow-xl transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-xs"
+          >
+            <LogOut size={18} />
+            Keluar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Router>
-      <Layout userData={userData} onLogout={() => setIsAuthenticated(false)}>
+      <Layout userData={userData} setUserData={setUserData} onLogout={handleLogout}>
         <div />
       </Layout>
     </Router>

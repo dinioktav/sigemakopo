@@ -1,12 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { cn } from '@/src/lib/utils';
+import { X, ChevronDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 type ToothStatus = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9';
+
+const TOOTH_STATUSES = [
+  { s: 'A', t: '0' as ToothStatus, label: 'Sehat', color: 'bg-white border-gray-400' },
+  { s: 'B', t: '1' as ToothStatus, label: 'Gigi Berlubang/Karies', color: 'bg-red-500 border-red-700' },
+  { s: 'C', t: '2' as ToothStatus, label: 'Tumpatan dengan karies', color: 'bg-blue-500 border-blue-700' },
+  { s: 'D', t: '3' as ToothStatus, label: 'Tumpatan tanpa karies', color: 'bg-green-500 border-green-700' },
+  { s: 'E', t: '4' as ToothStatus, label: 'Gigi dicabut karena karies', color: 'bg-gray-400 border-gray-600' },
+  { s: '-', t: '5' as ToothStatus, label: 'Gigi dicabut karena sebab lain', color: 'bg-gray-200 border-gray-400' },
+  { s: 'F', t: '6' as ToothStatus, label: 'Fissure Sealant', color: 'bg-yellow-400 border-yellow-600' },
+  { s: 'G', t: '7' as ToothStatus, label: 'Protesa cekat/mahkota cekat/implan/veneer', color: 'bg-purple-500 border-purple-700' },
+  { s: '-', t: '8' as ToothStatus, label: 'Gigi tidak tumbuh', color: 'bg-gray-100 border-gray-300 opacity-30' },
+  { s: '-', t: '9' as ToothStatus, label: 'Lain-lain', color: 'bg-orange-400 border-orange-600' },
+];
 
 interface ToothProps {
   number: number;
   status: ToothStatus;
-  onClick: (number: number) => void;
+  onClick: (number: number, event: React.MouseEvent) => void;
   isPrimary?: boolean;
 }
 
@@ -26,8 +41,8 @@ const Tooth: React.FC<ToothProps> = ({ number, status, onClick, isPrimary }) => 
 
   return (
     <div 
-      onClick={() => onClick(number)}
-      className="flex flex-col items-center cursor-pointer group"
+      onClick={(e) => onClick(number, e)}
+      className="flex flex-col items-center cursor-pointer group relative"
     >
       <span className={cn("text-[10px] font-bold mb-1 group-hover:text-blue-600", isPrimary ? "text-blue-500" : "text-gray-500")}>
         {number}
@@ -47,14 +62,49 @@ const Tooth: React.FC<ToothProps> = ({ number, status, onClick, isPrimary }) => 
   );
 };
 
-export const Odontogram = () => {
-  const [toothData, setToothData] = useState<Record<number, ToothStatus>>({});
+interface OdontogramProps {
+  value?: Record<number, ToothStatus>;
+  onChange?: (data: Record<number, ToothStatus>) => void;
+}
 
-  const handleToothClick = (number: number) => {
-    const statuses: ToothStatus[] = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
-    const currentStatus = toothData[number] || '0';
-    const nextIndex = (statuses.indexOf(currentStatus) + 1) % statuses.length;
-    setToothData({ ...toothData, [number]: statuses[nextIndex] });
+export const Odontogram: React.FC<OdontogramProps> = ({ value = {}, onChange }) => {
+  const [activeTooth, setActiveTooth] = useState<{ number: number, x: number, y: number } | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const toothData = value;
+  const setToothData = (newData: Record<number, ToothStatus>) => {
+    if (onChange) onChange(newData);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setActiveTooth(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleToothClick = (number: number, event: React.MouseEvent) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const container = event.currentTarget.closest('.odontogram-container');
+    const containerRect = container?.getBoundingClientRect();
+
+    if (containerRect) {
+      setActiveTooth({ 
+        number, 
+        x: rect.left - containerRect.left, 
+        y: rect.top - containerRect.top + rect.height
+      });
+    }
+  };
+
+  const setStatus = (status: ToothStatus) => {
+    if (activeTooth) {
+      setToothData({ ...toothData, [activeTooth.number]: status });
+      setActiveTooth(null);
+    }
   };
 
   // FDI Tooth Numbering - Permanent
@@ -70,7 +120,51 @@ export const Odontogram = () => {
   const lowerLeftPrim = [71, 72, 73, 74, 75];
 
   return (
-    <div className="glass-card p-6 rounded-2xl overflow-x-auto">
+    <div className="glass-card p-6 rounded-2xl overflow-x-auto relative odontogram-container">
+      <AnimatePresence>
+        {activeTooth && (
+          <motion.div
+            ref={dropdownRef}
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            className="absolute z-[100] bg-white border border-navy/10 rounded-2xl shadow-2xl p-4 w-64 max-h-[300px] overflow-y-auto custom-scrollbar"
+            style={{ 
+              left: Math.max(10, Math.min(activeTooth.x - 110, 1000)), // 1000 is a safe max width for absolute
+              top: activeTooth.y + 10 
+            }}
+          >
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-navy/5">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-4 bg-gold rounded-full"></div>
+                <span className="text-xs font-black text-navy uppercase tracking-widest">Gigi {activeTooth.number}</span>
+              </div>
+              <button onClick={() => setActiveTooth(null)} className="p-1 hover:bg-navy-50 rounded-lg text-navy/30 hover:text-pink transition-all">
+                <X size={14} />
+              </button>
+            </div>
+            <div className="space-y-1">
+              {TOOTH_STATUSES.map((item) => (
+                <button
+                  key={item.t}
+                  onClick={() => setStatus(item.t)}
+                  className={cn(
+                    "w-full flex items-center gap-3 p-2 rounded-xl transition-all text-left group",
+                    toothData[activeTooth.number] === item.t ? "bg-navy text-white" : "hover:bg-navy-50"
+                  )}
+                >
+                  <div className={cn("w-3 h-3 border rounded-sm shrink-0", item.color)}></div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black uppercase tracking-tighter leading-none mb-1">{item.label}</span>
+                    <span className="text-[8px] opacity-50 uppercase tracking-widest">Kode: {item.t}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="min-w-[800px] space-y-8">
         {/* Permanent Upper */}
         <div className="space-y-2">
@@ -121,42 +215,19 @@ export const Odontogram = () => {
 
         {/* Legend */}
         <div className="mt-8 border-t border-gray-100 pt-6">
-          <h4 className="text-xs font-bold text-gray-900 mb-4 uppercase tracking-wider">Legenda Status Gigi (Standar Kemenkes)</h4>
-          <div className="overflow-hidden rounded-xl border border-gray-100">
-            <table className="w-full text-left text-[10px]">
-              <thead className="bg-gray-50 text-gray-500 font-bold uppercase tracking-wider">
-                <tr>
-                  <th className="px-4 py-2 border-r border-gray-100">Gigi Sulung</th>
-                  <th className="px-4 py-2 border-r border-gray-100">Gigi Tetap</th>
-                  <th className="px-4 py-2">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {[
-                  { s: 'A', t: '0', label: 'Sehat', color: 'bg-white border-gray-400' },
-                  { s: 'B', t: '1', label: 'Gigi Berlubang/Karies', color: 'bg-red-500 border-red-700' },
-                  { s: 'C', t: '2', label: 'Tumpatan dengan karies', color: 'bg-blue-500 border-blue-700' },
-                  { s: 'D', t: '3', label: 'Tumpatan tanpa karies', color: 'bg-green-500 border-green-700' },
-                  { s: 'E', t: '4', label: 'Gigi dicabut karena karies', color: 'bg-gray-400 border-gray-600' },
-                  { s: '-', t: '5', label: 'Gigi dicabut karena sebab lain', color: 'bg-gray-200 border-gray-400' },
-                  { s: 'F', t: '6', label: 'Fissure Sealant', color: 'bg-yellow-400 border-yellow-600' },
-                  { s: 'G', t: '7', label: 'Protesa cekat/mahkota cekat/implan/veneer', color: 'bg-purple-500 border-purple-700' },
-                  { s: '-', t: '8', label: 'Gigi tidak tumbuh', color: 'bg-gray-100 border-gray-300 opacity-30' },
-                  { s: '-', t: '9', label: 'Lain-lain', color: 'bg-orange-400 border-orange-600' },
-                ].map((item, i) => (
-                  <tr key={i} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-2 border-r border-gray-100 font-bold text-blue-600">{item.s}</td>
-                    <td className="px-4 py-2 border-r border-gray-100 font-bold text-gray-900">{item.t}</td>
-                    <td className="px-4 py-2 flex items-center gap-3">
-                      <div className={cn("w-3 h-3 border rounded-sm", item.color)}></div>
-                      <span className="font-medium text-gray-700">{item.label}</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <h4 className="text-xs font-bold text-gray-900 mb-4 uppercase tracking-wider text-center">Legenda Status Gigi (Standar Kemenkes)</h4>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {TOOTH_STATUSES.map((item, i) => (
+              <div key={i} className="flex items-center gap-3 p-3 bg-navy-50/50 rounded-xl border border-transparent hover:border-gold/20 transition-all">
+                <div className={cn("w-4 h-4 border rounded-sm shrink-0 shadow-sm", item.color)}></div>
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-black text-navy uppercase tracking-tighter leading-tight">{item.label}</span>
+                  <span className="text-[8px] text-navy/40 uppercase font-bold tracking-widest">Kode: {item.t}</span>
+                </div>
+              </div>
+            ))}
           </div>
-          <p className="mt-4 text-[10px] text-gray-400 italic text-center">* Klik pada ikon gigi untuk mengubah status secara berurutan.</p>
+          <p className="mt-6 text-[10px] text-navy/30 font-bold uppercase tracking-[0.2em] text-center">* Klik pada ikon gigi untuk memilih status dari menu dropdown.</p>
         </div>
       </div>
     </div>

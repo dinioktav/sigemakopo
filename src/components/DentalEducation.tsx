@@ -37,43 +37,43 @@ const VIDEOS = [
   },
   { 
     id: 3, 
-    title: 'Pentingnya Menjaga Kesehatan Gigi', 
-    duration: '05:20', 
-    category: 'Kebersihan', 
-    thumbnail: 'https://img.youtube.com/vi/DdVTN0bU7gI/maxresdefault.jpg',
-    views: '20K',
-    rating: 4.9,
-    embedId: 'DdVTN0bU7gI'
+    title: 'Tips Menjaga Kesehatan Gigi dan Mulut', 
+    duration: '05:10', 
+    category: 'Edukasi Umum', 
+    thumbnail: 'https://img.youtube.com/vi/nZfKQYJ1938/maxresdefault.jpg',
+    views: '8K',
+    rating: 4.7,
+    embedId: 'nZfKQYJ1938'
   },
   { 
     id: 4, 
-    title: 'Teknik Menyikat Gigi Bass', 
-    duration: '03:45', 
+    title: 'Pentingnya Periksa Gigi Rutin', 
+    duration: '04:30', 
     category: 'Pencegahan', 
-    thumbnail: 'https://img.youtube.com/vi/hD5Gn71atME/maxresdefault.jpg',
-    views: '45K',
+    thumbnail: 'https://img.youtube.com/vi/6mrlGKd0NEs/maxresdefault.jpg',
+    views: '10K',
     rating: 4.9,
-    embedId: 'hD5Gn71atME'
+    embedId: '6mrlGKd0NEs'
   },
   { 
     id: 5, 
-    title: 'Proses Terjadinya Karang Gigi', 
-    duration: '04:15', 
-    category: 'Tindakan Medis', 
-    thumbnail: 'https://img.youtube.com/vi/_0r846W6WvA/maxresdefault.jpg',
-    views: '112K',
-    rating: 4.9,
-    embedId: '_0r846W6WvA'
+    title: 'Kesehatan Gigi untuk Anak', 
+    duration: '06:15', 
+    category: 'Pedodonti', 
+    thumbnail: 'https://img.youtube.com/vi/n8O-TEdiiOw/maxresdefault.jpg',
+    views: '14K',
+    rating: 4.8,
+    embedId: 'n8O-TEdiiOw'
   },
   { 
     id: 6, 
-    title: 'Tips Gigi Sehat Anak', 
-    duration: '06:20', 
-    category: 'Pedodonti', 
-    thumbnail: 'https://img.youtube.com/vi/0z_p_fN6f7c/maxresdefault.jpg',
-    views: '15K',
-    rating: 4.6,
-    embedId: '0z_p_fN6f7c'
+    title: 'Mengenal Karang Gigi', 
+    duration: '03:55', 
+    category: 'Tindakan Medis', 
+    thumbnail: 'https://img.youtube.com/vi/3s08kea6dU0/maxresdefault.jpg',
+    views: '22K',
+    rating: 4.9,
+    embedId: '3s08kea6dU0'
   }
 ];
 

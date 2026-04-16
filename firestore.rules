@@ -1,0 +1,111 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: Firebase Auth UID
+    // Fields:
+    //   - fullName: string (required)
+    //   - role: string (required) - Super Admin, Administrasi Umum, Terapis Gigi dan Mulut, Dosen Pembimbing, Pasien
+    //   - jenisTenaga: string (optional)
+    //   - email: string (required)
+    //   - isApproved: boolean (required)
+    //   - createdAt: string (ISO date)
+    //   - updatedAt: string (ISO date)
+    //
+    // Collection: patients
+    // Document ID: Auto-generated
+    // Fields:
+    //   - name: string (required)
+    //   - nik: string (required)
+    //   - birthDate: string
+    //   - phone: string
+    //   - insurance: string
+    //   - income: string
+    //   - hobbies: string
+    //   - createdAt: timestamp
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function userExists() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function getRole() {
+      return userExists() ? getUserData().role : 'Guest';
+    }
+    
+    function isApproved() {
+      return userExists() && getUserData().isApproved == true;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isSuperAdmin() {
+      return isAuthenticated() && 
+        (
+          (userExists() && getUserData().role == 'Super Admin') ||
+          (request.auth.token.email != null && request.auth.token.email.lower() == "nuroktav.do@gmail.com")
+        );
+    }
+    
+    function hasAnyRole(roles) {
+      return isAuthenticated() && (isSuperAdmin() || (isApproved() && getRole() in roles));
+    }
+
+    // ===============================================================
+    // User Profiles
+    // ===============================================================
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      
+      allow create: if isAuthenticated() && 
+        (
+          isSuperAdmin() ||
+          (
+            request.resource.data.role != 'Super Admin' &&
+            (
+              (request.resource.data.role == 'Pasien' && request.resource.data.isApproved == true) ||
+              (request.resource.data.role != 'Pasien' && request.resource.data.isApproved == false)
+            )
+          )
+        );
+
+      allow update: if isSuperAdmin() || 
+        (isOwner(userId) && 
+         request.resource.data.role == resource.data.role && 
+         request.resource.data.isApproved == resource.data.isApproved);
+
+      allow delete: if isSuperAdmin();
+    }
+
+    // ===============================================================
+    // Patients
+    // ===============================================================
+    match /patients/{patientId} {
+      allow read, write: if hasAnyRole(['Super Admin', 'Administrasi Umum', 'Terapis Gigi dan Mulut', 'Dosen Pembimbing']);
+    }
+
+    // Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

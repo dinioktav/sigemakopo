@@ -15,12 +15,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 
-const MOCK_APPOINTMENTS = [
-  { id: 1, patient: 'Budi Santoso', time: '09:00', date: '2026-04-02', procedure: 'Scaling & Polishing', status: 'Confirmed', doctor: 'Drg. Ahmad' },
-  { id: 2, patient: 'Siti Aminah', time: '10:30', date: '2026-04-02', procedure: 'Tumpatan Komposit', status: 'Pending', doctor: 'Drg. Ahmad' },
-  { id: 3, patient: 'Andi Wijaya', time: '13:00', date: '2026-04-02', procedure: 'Konsultasi Rutin', status: 'Confirmed', doctor: 'Drg. Ahmad' },
-  { id: 4, patient: 'Dewi Lestari', time: '15:00', date: '2026-04-02', procedure: 'Pencabutan Gigi', status: 'Cancelled', doctor: 'Drg. Ahmad' },
-];
+const MOCK_APPOINTMENTS: any[] = [];
 
 export const Appointments = () => {
   const [view, setView] = useState<'list' | 'calendar'>('list');
@@ -68,9 +63,9 @@ export const Appointments = () => {
             <h3 className="text-xs font-black text-navy uppercase tracking-[0.2em] mb-6">Status Hari Ini</h3>
             <div className="space-y-4">
               {[
-                { label: 'Terkonfirmasi', count: 12, color: 'text-green-600', bg: 'bg-green-50' },
-                { label: 'Menunggu', count: 5, color: 'text-pink', bg: 'bg-pink-soft' },
-                { label: 'Dibatalkan', count: 2, color: 'text-navy/40', bg: 'bg-navy-50' },
+                { label: 'Terkonfirmasi', count: 0, color: 'text-green-600', bg: 'bg-green-50' },
+                { label: 'Menunggu', count: 0, color: 'text-pink', bg: 'bg-pink-soft' },
+                { label: 'Dibatalkan', count: 0, color: 'text-navy/40', bg: 'bg-navy-50' },
               ].map((stat, i) => (
                 <div key={i} className={cn("p-4 rounded-2xl flex items-center justify-between", stat.bg)}>
                   <span className={cn("text-[10px] font-black uppercase tracking-widest", stat.color)}>{stat.label}</span>
@@ -83,7 +78,7 @@ export const Appointments = () => {
           <div className="bg-navy p-8 rounded-[2rem] text-white shadow-xl shadow-navy/20 relative overflow-hidden">
             <div className="absolute -top-10 -right-10 w-32 h-32 bg-pink/20 rounded-full blur-3xl"></div>
             <h3 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-2">Slot Tersedia</h3>
-            <p className="text-4xl font-black tracking-tighter text-pink">08</p>
+            <p className="text-4xl font-black tracking-tighter text-pink">00</p>
             <p className="text-[10px] font-bold opacity-40 mt-4 leading-relaxed">Sisa slot reservasi untuk sesi sore hari ini.</p>
           </div>
         </div>

@@ -1,7 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Outfit", "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
   
   --color-navy: #0f172a;
@@ -11,6 +12,8 @@
   --color-pink-dark: #be185d;
   --color-pink-light: #f472b6;
   --color-pink-soft: #fce7f3;
+  --color-gold: #d4af37;
+  --color-gold-light: #f1e4b8;
 }
 
 @layer base {
@@ -37,4 +40,28 @@
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
   @apply bg-navy/10 rounded-full hover:bg-navy/20 transition-colors;
+}
+
+@media print {
+  .no-print,
+  button,
+  nav,
+  footer,
+  .footer-nav {
+    display: none !important;
+  }
+  
+  body {
+    background: white !important;
+  }
+  
+  .print-only {
+    display: block !important;
+  }
+  
+  .billing-card {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
 }

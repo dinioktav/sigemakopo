@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   FileCheck, 
   Search, 
@@ -9,32 +9,165 @@ import {
   Clock, 
   MoreVertical,
   Plus,
-  PenTool
+  PenTool,
+  X,
+  RotateCcw,
+  Save
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
+import SignaturePad from 'signature_pad';
+import { useEffect } from 'react';
 
-const MOCK_CONSENTS = [
-  { id: 'IC-2026-001', patient: 'Budi Santoso', date: '2026-04-01', procedure: 'Pencabutan Gigi', status: 'Signed', signedAt: '2026-04-01 10:15' },
-  { id: 'IC-2026-002', patient: 'Siti Aminah', date: '2026-04-01', procedure: 'Tumpatan Komposit', status: 'Pending', signedAt: '-' },
-  { id: 'IC-2026-003', patient: 'Andi Wijaya', date: '2026-03-30', procedure: 'Scaling & Root Planing', status: 'Signed', signedAt: '2026-03-30 14:20' },
-  { id: 'IC-2026-004', patient: 'Dewi Lestari', date: '2026-03-28', procedure: 'Topikal Fluor', status: 'Signed', signedAt: '2026-03-28 09:45' },
-];
+const MOCK_CONSENTS: any[] = [];
 
 export const InformedConsent = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [patientName, setPatientName] = useState('');
+  const [procedure, setProcedure] = useState('');
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const sigPad = useRef<SignaturePad | null>(null);
+
+  useEffect(() => {
+    if (isModalOpen && canvasRef.current) {
+      const timer = setTimeout(() => {
+        const canvas = canvasRef.current;
+        if (canvas) {
+          const ratio = Math.max(window.devicePixelRatio || 1, 1);
+          canvas.width = canvas.offsetWidth * ratio;
+          canvas.height = canvas.offsetHeight * ratio;
+          canvas.getContext("2d")?.scale(ratio, ratio);
+          
+          sigPad.current = new SignaturePad(canvas, {
+            backgroundColor: 'rgba(0,0,0,0)',
+            penColor: '#0f172a'
+          });
+        }
+      }, 300);
+      return () => clearTimeout(timer);
+    } else {
+      sigPad.current?.off();
+      sigPad.current = null;
+    }
+  }, [isModalOpen]);
+
+  const clearSignature = () => {
+    sigPad.current?.clear();
+  };
+
+  const saveConsent = () => {
+    if (!sigPad.current || sigPad.current.isEmpty()) {
+      alert('Silakan berikan tanda tangan terlebih dahulu.');
+      return;
+    }
+    // In a real app, we would save the signature data URL and other info to Firestore
+    const signatureData = sigPad.current.toDataURL();
+    console.log('Saving consent for:', patientName, 'Procedure:', procedure);
+    console.log('Signature Data:', signatureData);
+    
+    alert('Informed Consent berhasil disimpan!');
+    setIsModalOpen(false);
+    setPatientName('');
+    setProcedure('');
+  };
 
   return (
     <div className="p-8">
       <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h1 className="text-3xl font-black text-navy tracking-tight uppercase">Informed Consent</h1>
-          <p className="text-navy/40 font-medium mt-1">Kelola persetujuan tindakan medis pasien.</p>
+          <p className="text-navy/40 font-medium mt-1">SIGEMA KOPO : Sistem Kesehatan Gigi Masyarakat Kopo</p>
         </div>
-        <button className="flex items-center justify-center gap-3 px-8 py-4 bg-navy text-pink rounded-2xl font-black hover:bg-navy-light shadow-xl shadow-navy/20 transition-all uppercase tracking-widest text-xs">
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center justify-center gap-3 px-8 py-4 bg-navy text-gold rounded-2xl font-black hover:bg-navy-light shadow-2xl shadow-navy/40 transition-all uppercase tracking-widest text-xs border border-gold/20"
+        >
           <Plus size={20} />
           Buat Persetujuan Baru
         </button>
       </header>
+
+      {/* Modal Buat Persetujuan */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-navy/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-8 bg-navy text-white flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-black uppercase tracking-tight">Form Informed Consent</h2>
+                <p className="text-pink text-[10px] font-bold uppercase tracking-widest mt-1">Persetujuan Tindakan Medis</p>
+              </div>
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="p-2 hover:bg-white/10 rounded-full transition-all"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="p-10 space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-navy/70 uppercase tracking-wider">Nama Pasien</label>
+                  <input 
+                    type="text" 
+                    className="w-full p-4 bg-navy-50 border-2 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-2xl text-sm transition-all font-medium"
+                    placeholder="Masukkan nama pasien"
+                    value={patientName}
+                    onChange={(e) => setPatientName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-navy/70 uppercase tracking-wider">Tindakan Medis</label>
+                  <input 
+                    type="text" 
+                    className="w-full p-4 bg-navy-50 border-2 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-2xl text-sm transition-all font-medium"
+                    placeholder="Contoh: Pencabutan Gigi"
+                    value={procedure}
+                    onChange={(e) => setProcedure(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-black text-navy/70 uppercase tracking-wider">Tanda Tangan Pasien / Wali</label>
+                  <button 
+                    onClick={clearSignature}
+                    className="flex items-center gap-2 text-[10px] font-black text-pink hover:text-pink-dark uppercase tracking-widest transition-colors"
+                  >
+                    <RotateCcw size={14} /> Bersihkan
+                  </button>
+                </div>
+                <div className="border-2 border-dashed border-navy/10 rounded-[2rem] bg-navy-50/50 overflow-hidden">
+                  <canvas 
+                    ref={canvasRef}
+                    className="w-full h-48 cursor-crosshair"
+                  />
+                </div>
+                <p className="text-[10px] text-navy/40 text-center font-medium italic">
+                  Dengan menandatangani di atas, pasien/wali menyatakan setuju atas tindakan medis yang akan dilakukan.
+                </p>
+              </div>
+
+              <div className="pt-4 flex gap-4">
+                <button 
+                  onClick={() => setIsModalOpen(false)}
+                  className="flex-1 py-5 bg-navy-50 text-navy/60 rounded-2xl font-black hover:bg-navy-100 transition-all uppercase tracking-widest text-xs"
+                >
+                  Batal
+                </button>
+                <button 
+                  onClick={saveConsent}
+                  className="flex-1 py-5 bg-navy text-white rounded-2xl font-black hover:bg-navy-light shadow-xl shadow-navy/20 transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-xs"
+                >
+                  <Save size={18} className="text-pink" />
+                  Simpan & TTD
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="glass-card rounded-[2.5rem] overflow-hidden">
         <div className="p-8 border-b border-navy/5 flex flex-col md:flex-row gap-6 bg-navy-50/10">
