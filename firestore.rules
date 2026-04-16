@@ -103,6 +103,13 @@ service cloud.firestore {
       allow read, write: if hasAnyRole(['Super Admin', 'Administrasi Umum', 'Terapis Gigi dan Mulut', 'Dosen Pembimbing']);
     }
 
+    // ===============================================================
+    // Dental Records
+    // ===============================================================
+    match /dental_records/{recordId} {
+      allow read, write: if hasAnyRole(['Super Admin', 'Terapis Gigi dan Mulut', 'Dosen Pembimbing']);
+    }
+
     // Default Deny
     match /{document=**} {
       allow read, write: if false;

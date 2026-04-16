@@ -246,6 +246,33 @@ export const DentalHygieneForm = () => {
     }
   }, [selectedPatientId]);
 
+  const handleSaveProgress = async () => {
+    if (!selectedPatientId) {
+      alert("Silakan pilih pasien terlebih dahulu.");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const recordData = {
+        ...formData,
+        patientId: selectedPatientId,
+        updatedAt: Timestamp.now(),
+      };
+
+      // We use addDoc for now, but ideally we should update if it already exists for this visit
+      // For simplicity and following user request "klik simpan pada setiap bagian", we'll just add/save
+      await addDoc(collection(db, 'dental_records'), recordData);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (error) {
+      console.error("Error saving progress:", error);
+      alert("Gagal menyimpan progress. Silakan coba lagi.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, STEPS.length - 1));
   const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 0));
 
@@ -413,41 +440,60 @@ export const DentalHygieneForm = () => {
   }, [formData.odontogram.teeth]);
 
   useEffect(() => {
-    const initPad = (canvas: HTMLCanvasElement | null, padRef: React.MutableRefObject<SignaturePad | null>) => {
-      if (!canvas) return;
-      
-      const ratio = Math.max(window.devicePixelRatio || 1, 1);
-      canvas.width = canvas.offsetWidth * ratio;
-      canvas.height = canvas.offsetHeight * ratio;
-      canvas.getContext("2d")?.scale(ratio, ratio);
-      
-      const pad = new SignaturePad(canvas, {
-        backgroundColor: 'rgba(0,0,0,0)',
-        penColor: '#0f172a'
-      });
-      padRef.current = pad;
-      
-      return () => {
-        pad.off();
-        padRef.current = null;
-      };
+    const initializePads = () => {
+      // TGM Pad (Step 5)
+      if (currentStep === 5 && canvasRef.current && !sigPad.current) {
+        const canvas = canvasRef.current;
+        if (canvas.offsetWidth > 0) {
+          const ratio = Math.max(window.devicePixelRatio || 1, 1);
+          canvas.width = canvas.offsetWidth * ratio;
+          canvas.height = canvas.offsetHeight * ratio;
+          canvas.getContext("2d")?.scale(ratio, ratio);
+          sigPad.current = new SignaturePad(canvas, {
+            backgroundColor: 'rgba(0,0,0,0)',
+            penColor: '#0f172a'
+          });
+          // Restore if exists in formData
+          if (formData.signature) {
+            sigPad.current.fromDataURL(formData.signature);
+          }
+        }
+      }
+
+      // Patient Pad (Step 4)
+      if (currentStep === 4 && patientCanvasRef.current && !patientSigPad.current) {
+        const canvas = patientCanvasRef.current;
+        if (canvas.offsetWidth > 0) {
+          const ratio = Math.max(window.devicePixelRatio || 1, 1);
+          canvas.width = canvas.offsetWidth * ratio;
+          canvas.height = canvas.offsetHeight * ratio;
+          canvas.getContext("2d")?.scale(ratio, ratio);
+          patientSigPad.current = new SignaturePad(canvas, {
+            backgroundColor: 'rgba(0,0,0,0)',
+            penColor: '#0f172a'
+          });
+          // Restore if exists in formData
+          if (formData.consent.patientSignature) {
+            patientSigPad.current.fromDataURL(formData.consent.patientSignature);
+          }
+        }
+      }
     };
 
-    let cleanupTGM: (() => void) | undefined;
-    let cleanupPatient: (() => void) | undefined;
-
-    if (currentStep === 5 && canvasRef.current) {
-      cleanupTGM = initPad(canvasRef.current, sigPad);
-    }
-    if (currentStep === 4 && patientCanvasRef.current) {
-      cleanupPatient = initPad(patientCanvasRef.current, patientSigPad);
-    }
-
+    const timer = setInterval(initializePads, 200);
+    
     return () => {
-      cleanupTGM?.();
-      cleanupPatient?.();
+      clearInterval(timer);
+      if (currentStep !== 5 && sigPad.current) {
+        sigPad.current.off();
+        sigPad.current = null;
+      }
+      if (currentStep !== 4 && patientSigPad.current) {
+        patientSigPad.current.off();
+        patientSigPad.current = null;
+      }
     };
-  }, [currentStep]);
+  }, [currentStep, formData.signature, formData.consent.patientSignature]);
 
   const clearSignature = () => {
     sigPad.current?.clear();
@@ -482,11 +528,20 @@ export const DentalHygieneForm = () => {
           <p className="text-navy/40 font-black uppercase tracking-[0.3em] text-[10px] ml-5">Sistem Kesehatan Gigi Masyarakat Kopo</p>
         </div>
         <div className="flex items-center gap-4">
-          <button className="px-8 py-4 bg-white border-2 border-navy/5 rounded-2xl text-xs font-black text-navy/40 hover:border-pink hover:text-pink transition-all uppercase tracking-widest shadow-sm">
-            Simpan Draft
+          <button 
+            onClick={handleSaveProgress}
+            disabled={isSaving}
+            className="px-8 py-4 bg-white border-2 border-navy/5 rounded-2xl text-xs font-black text-navy/40 hover:border-pink hover:text-pink transition-all uppercase tracking-widest shadow-sm flex items-center gap-2"
+          >
+            {isSaving ? <RefreshCw className="animate-spin" size={14} /> : <Save size={14} />}
+            {saveSuccess ? 'Tersimpan' : 'Simpan Draft'}
           </button>
-          <button className="px-8 py-4 bg-navy rounded-2xl text-xs font-black text-gold hover:bg-navy-light shadow-2xl shadow-navy/40 transition-all flex items-center gap-3 uppercase tracking-widest border border-gold/20">
-            <Save size={18} />
+          <button 
+            onClick={handleSubmit}
+            disabled={isSaving}
+            className="px-8 py-4 bg-navy rounded-2xl text-xs font-black text-gold hover:bg-navy-light shadow-2xl shadow-navy/40 transition-all flex items-center gap-3 uppercase tracking-widest border border-gold/20"
+          >
+            {isSaving ? <RefreshCw className="animate-spin" size={18} /> : <Save size={18} />}
             Finalisasi Rekam
           </button>
         </div>
@@ -505,7 +560,7 @@ export const DentalHygieneForm = () => {
           >
             <option value="">-- Pilih Pasien --</option>
             {patients.map(p => (
-              <option key={p.id} value={p.id}>{p.name} ({p.nik})</option>
+              <option key={p.id} value={p.id}>{p.rmNumber || 'No RM'} - {p.name} ({p.nik})</option>
             ))}
           </select>
         </div>
@@ -1134,7 +1189,7 @@ export const DentalHygieneForm = () => {
                           <div className="bg-navy-50 rounded-2xl overflow-hidden border border-navy/5 shadow-inner">
                             <canvas 
                               ref={patientCanvasRef}
-                              className="w-full h-40 cursor-crosshair"
+                              className="w-full h-40 cursor-crosshair touch-none"
                               onMouseUp={savePatientSignature}
                               onTouchEnd={savePatientSignature}
                             />
@@ -1355,7 +1410,7 @@ export const DentalHygieneForm = () => {
                       <div className="bg-navy-50 rounded-2xl overflow-hidden border border-navy/5 shadow-inner">
                         <canvas 
                           ref={canvasRef}
-                          className="w-full h-48 cursor-crosshair"
+                          className="w-full h-48 cursor-crosshair touch-none"
                           onMouseUp={saveSignature}
                           onTouchEnd={saveSignature}
                         />
@@ -1531,14 +1586,24 @@ export const DentalHygieneForm = () => {
             ))}
           </div>
 
-          <button 
-            onClick={nextStep}
-            disabled={currentStep === STEPS.length - 1}
-            className="flex items-center gap-2 px-8 py-3 bg-white border-2 border-navy/5 rounded-xl font-black text-navy hover:border-pink hover:text-pink disabled:opacity-30 transition-all uppercase tracking-widest text-xs"
-          >
-            Selanjutnya
-            <ChevronRight size={20} />
-          </button>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={handleSaveProgress}
+              disabled={isSaving}
+              className="flex items-center gap-2 px-6 py-3 bg-white border-2 border-navy/5 rounded-xl font-black text-navy/40 hover:text-pink hover:border-pink transition-all uppercase tracking-widest text-xs"
+            >
+              {isSaving ? <RefreshCw className="animate-spin" size={16} /> : <Save size={16} />}
+              {saveSuccess ? 'Tersimpan' : 'Simpan Progress'}
+            </button>
+            <button 
+              onClick={nextStep}
+              disabled={currentStep === STEPS.length - 1}
+              className="flex items-center gap-2 px-8 py-3 bg-white border-2 border-navy/5 rounded-xl font-black text-navy hover:border-pink hover:text-pink disabled:opacity-30 transition-all uppercase tracking-widest text-xs"
+            >
+              Selanjutnya
+              <ChevronRight size={20} />
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -20,14 +20,21 @@ import {
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { db } from '../lib/firebase';
-import { collection, addDoc, onSnapshot, query, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, query, orderBy, Timestamp, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import SignaturePad from 'signature_pad';
+import { 
+  Eye, 
+  Edit3, 
+  Trash2,
+  History
+} from 'lucide-react';
 
 export const PatientList = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [patients, setPatients] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingPatientId, setEditingPatientId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sigPad = useRef<SignaturePad | null>(null);
@@ -158,11 +165,24 @@ export const PatientList = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await addDoc(collection(db, 'patients'), {
-        ...newPatient,
-        createdAt: Timestamp.now()
-      });
+      if (editingPatientId) {
+        await updateDoc(doc(db, 'patients', editingPatientId), {
+          ...newPatient,
+          updatedAt: Timestamp.now()
+        });
+      } else {
+        const year = new Date().getFullYear();
+        const count = patients.length + 1;
+        const rmNumber = `${year}/${count.toString().padStart(5, '0')}`;
+        
+        await addDoc(collection(db, 'patients'), {
+          ...newPatient,
+          rmNumber,
+          createdAt: Timestamp.now()
+        });
+      }
       setIsModalOpen(false);
+      setEditingPatientId(null);
       setNewPatient({
         paymentMethod: 'Tunai',
         nik: '',
@@ -192,16 +212,61 @@ export const PatientList = () => {
         signature: ''
       });
     } catch (error) {
-      console.error("Error adding patient:", error);
-      alert("Gagal menambahkan pasien. Silakan coba lagi.");
+      console.error("Error saving patient:", error);
+      alert("Gagal menyimpan data pasien. Silakan coba lagi.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEdit = (patient: any) => {
+    setEditingPatientId(patient.id);
+    setNewPatient({
+      paymentMethod: patient.paymentMethod || 'Tunai',
+      nik: patient.nik || '',
+      name: patient.name || '',
+      gender: patient.gender || 'Laki-laki',
+      birthPlace: patient.birthPlace || '',
+      birthDate: patient.birthDate || '',
+      age: patient.age || '',
+      address: patient.address || '',
+      rt: patient.rt || '',
+      rw: patient.rw || '',
+      province: patient.province || '',
+      city: patient.city || '',
+      district: patient.district || '',
+      subDistrict: patient.subDistrict || '',
+      maritalStatus: patient.maritalStatus || 'Belum Menikah',
+      education: patient.education || 'SMA',
+      occupation: patient.occupation || '',
+      phone: patient.phone || '',
+      guardianRelation: patient.guardianRelation || 'Pasien Sendiri',
+      guardianNik: patient.guardianNik || '',
+      guardianName: patient.guardianName || '',
+      guardianGender: patient.guardianGender || 'Laki-laki',
+      guardianBirthDate: patient.guardianBirthDate || '',
+      guardianAddress: patient.guardianAddress || '',
+      guardianPhone: patient.guardianPhone || '',
+      signature: patient.signature || ''
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm("Apakah Anda yakin ingin menghapus data pasien ini?")) {
+      try {
+        await deleteDoc(doc(db, 'patients', id));
+      } catch (error) {
+        console.error("Error deleting patient:", error);
+        alert("Gagal menghapus data pasien.");
+      }
     }
   };
 
   const filteredPatients = patients.filter(p => 
     p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.nik?.includes(searchTerm) ||
+    p.rmNumber?.includes(searchTerm) ||
     p.id?.includes(searchTerm)
   );
 
@@ -240,10 +305,10 @@ export const PatientList = () => {
             >
               <header className="p-8 bg-navy text-white flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-black uppercase tracking-tighter">Tambah Pasien Baru</h2>
-                  <p className="text-gold text-[10px] font-black uppercase tracking-[0.3em] mt-1">Registrasi Master Data Pasien</p>
+                  <h2 className="text-2xl font-black uppercase tracking-tighter">{editingPatientId ? 'Edit Data Pasien' : 'Tambah Pasien Baru'}</h2>
+                  <p className="text-gold text-[10px] font-black uppercase tracking-[0.3em] mt-1">{editingPatientId ? 'Pembaruan Master Data Pasien' : 'Registrasi Master Data Pasien'}</p>
                 </div>
-                <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-white/10 rounded-xl transition-all">
+                <button onClick={() => { setIsModalOpen(false); setEditingPatientId(null); }} className="p-2 hover:bg-white/10 rounded-xl transition-all">
                   <X size={24} />
                 </button>
               </header>
@@ -565,37 +630,26 @@ export const PatientList = () => {
           <table className="w-full text-left">
             <thead>
               <tr className="bg-navy-50/50 text-navy/30 text-[10px] uppercase tracking-[0.2em] font-black">
-                <th className="px-8 py-6">Pasien</th>
-                <th className="px-8 py-6">Identitas & Sosial</th>
+                <th className="px-8 py-6">No RM</th>
+                <th className="px-8 py-6">Nama Pasien</th>
+                <th className="px-8 py-6">Identitas (NIK & TTL)</th>
                 <th className="px-8 py-6">Kontak</th>
                 <th className="px-8 py-6">Asuransi</th>
-                <th className="px-8 py-6">Aksi</th>
+                <th className="px-8 py-6 text-center">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-navy/5">
               {filteredPatients.map((patient) => (
-                <tr key={patient.id} className="hover:bg-pink-soft/30 transition-colors group cursor-pointer">
+                <tr key={patient.id} className="hover:bg-pink-soft/30 transition-colors group">
+                  <td className="px-8 py-6">
+                    <p className="text-xs font-black text-navy tracking-widest">{patient.rmNumber || '-'}</p>
+                  </td>
                   <td className="px-8 py-6">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-navy text-pink flex items-center justify-center font-black text-lg shadow-lg shadow-navy/10 group-hover:scale-110 transition-transform">
+                      <div className="w-10 h-10 rounded-xl bg-navy text-gold flex items-center justify-center font-black text-sm shadow-lg shadow-navy/10 group-hover:scale-110 transition-transform">
                         {patient.name?.charAt(0)}
                       </div>
-                      <div>
-                        <div className="flex items-center gap-3">
-                          <p className="text-sm font-black text-navy uppercase tracking-tight">{patient.name}</p>
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/records?patientId=${patient.id}`);
-                            }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-navy text-gold rounded-lg font-black hover:bg-navy-light transition-all uppercase tracking-widest text-[8px] border border-gold/20"
-                          >
-                            <Stethoscope size={12} />
-                            Layani
-                          </button>
-                        </div>
-                        <p className="text-[10px] text-pink font-black tracking-widest mt-0.5">{patient.id.substring(0, 8)}...</p>
-                      </div>
+                      <p className="text-sm font-black text-navy uppercase tracking-tight">{patient.name}</p>
                     </div>
                   </td>
                   <td className="px-8 py-6">
@@ -603,13 +657,9 @@ export const PatientList = () => {
                       <p className="text-xs text-navy/60 font-bold flex items-center gap-2">
                         <CreditCard size={14} className="text-navy/20" /> {patient.nik}
                       </p>
-                      <p className="text-xs text-navy/40 font-medium flex items-center gap-2">
-                        <Calendar size={14} className="text-navy/20" /> {patient.birthDate}
+                      <p className="text-[10px] text-navy/40 font-medium flex items-center gap-2">
+                        <Calendar size={14} className="text-navy/20" /> {patient.birthPlace}, {patient.birthDate}
                       </p>
-                      <div className="flex gap-2 mt-2">
-                        <span className="text-[9px] font-black bg-navy-50 text-navy/40 px-2 py-1 rounded uppercase tracking-tighter">Income: {patient.income}</span>
-                        <span className="text-[9px] font-black bg-pink-soft text-pink px-2 py-1 rounded uppercase tracking-tighter">Hobi: {patient.hobbies}</span>
-                      </div>
                     </div>
                   </td>
                   <td className="px-8 py-6">
@@ -620,20 +670,42 @@ export const PatientList = () => {
                   <td className="px-8 py-6">
                     <span className={cn(
                       "text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest border",
-                      patient.insurance === 'BPJS' 
+                      patient.paymentMethod === 'BPJS' 
                         ? "bg-pink-soft text-pink border-pink-soft" 
                         : "bg-navy-50 text-navy border-navy-50"
                     )}>
-                      {patient.insurance}
+                      {patient.paymentMethod === 'BPJS' ? 'BPJS' : 'Umum'}
                     </span>
                   </td>
                   <td className="px-8 py-6">
-                    <div className="flex items-center gap-2">
-                      <button className="p-2 text-navy/20 hover:text-pink hover:bg-pink-soft rounded-xl transition-all">
-                        <ChevronRight size={20} />
+                    <div className="flex items-center justify-center gap-2">
+                      <button 
+                        onClick={() => navigate(`/records?patientId=${patient.id}`)}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-navy text-gold rounded-xl font-black hover:bg-navy-light transition-all uppercase tracking-widest text-[9px] border border-gold/20"
+                        title="Layani"
+                      >
+                        <Stethoscope size={14} />
+                        Layani
                       </button>
-                      <button className="p-2 text-navy/20 hover:text-navy hover:bg-navy-50 rounded-xl transition-all">
-                        <MoreVertical size={20} />
+                      <button 
+                        className="p-2 text-navy/20 hover:text-navy hover:bg-navy-50 rounded-xl transition-all"
+                        title="Lihat Riwayat RM"
+                      >
+                        <History size={18} />
+                      </button>
+                      <button 
+                        onClick={() => handleEdit(patient)}
+                        className="p-2 text-navy/20 hover:text-pink hover:bg-pink-soft rounded-xl transition-all"
+                        title="Edit"
+                      >
+                        <Edit3 size={18} />
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(patient.id)}
+                        className="p-2 text-navy/20 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                        title="Hapus"
+                      >
+                        <Trash2 size={18} />
                       </button>
                     </div>
                   </td>
