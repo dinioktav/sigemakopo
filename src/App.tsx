@@ -13,6 +13,7 @@ import {
   Bell,
   Search,
   Plus,
+  Home,
   ChevronRight,
   Activity,
   TrendingUp,
@@ -233,92 +234,87 @@ const ProfilePage = ({ userData, setUserData }: { userData: any, setUserData: an
 };
 
 const Dashboard = () => (
-  <div className="p-8">
-    <header className="mb-10">
-      <h1 className="text-3xl font-bold text-navy tracking-tight uppercase">Dashboard SIGEMA KOPO</h1>
-      <p className="text-navy/40 font-medium mt-1">Sistem Kesehatan Gigi Masyarakat Kopo</p>
-    </header>
-    
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
+  <div className="p-8 space-y-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {[
-        { label: 'Total Pasien', value: '0', icon: Users, color: 'bg-navy' },
-        { label: 'Kunjungan Hari Ini', value: '0', icon: Calendar, color: 'bg-pink' },
-        { label: 'Billing Pending', value: 'Rp 0', icon: Receipt, color: 'bg-navy-light' },
-        { label: 'Consent Signed', value: '0%', icon: FileCheck, color: 'bg-pink-light' },
+        { label: 'Total Pasien', value: '0', icon: Users, color: 'bg-primary' },
+        { label: 'Kunjungan Hari Ini', value: '0', icon: Calendar, color: 'bg-primary' },
+        { label: 'Billing Pending', value: 'Rp 0', icon: Receipt, color: 'bg-danger' },
+        { label: 'Antrean Aktif', value: '0', icon: Activity, color: 'bg-success' },
       ].map((stat, i) => (
-        <div key={i} className="bg-white p-8 rounded-[2.5rem] flex items-center gap-6 group hover:scale-[1.02] transition-all duration-300 border border-navy/5 shadow-sm">
-          <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform group-hover:scale-110", stat.color)}>
-            <stat.icon size={26} />
+        <div key={i} className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-center gap-5 hover:border-primary/30 transition-all group">
+          <div className={cn("w-12 h-12 rounded-lg flex items-center justify-center text-white shadow-md transition-transform group-hover:scale-110", stat.color)}>
+            <stat.icon size={22} />
           </div>
           <div>
-            <p className="text-[10px] text-navy/30 font-bold uppercase tracking-widest mb-1">{stat.label}</p>
-            <p className="text-3xl font-bold text-navy tracking-tighter">{stat.value}</p>
+            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-0.5">{stat.label}</p>
+            <p className="text-2xl font-bold text-gray-900 tracking-tight">{stat.value}</p>
           </div>
         </div>
       ))}
     </div>
 
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div className="lg:col-span-2 bg-white p-8 rounded-[2.5rem] border border-navy/5 shadow-sm">
-        <div className="flex items-center justify-between mb-8">
-          <h3 className="font-bold text-navy uppercase tracking-widest text-[11px]">Tren Kesehatan Gigi Populasi</h3>
+      <div className="lg:col-span-2 bg-white p-8 rounded-xl border border-gray-200 shadow-sm">
+        <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-50">
+          <h3 className="font-bold text-gray-700 uppercase tracking-widest text-[11px]">Tren Pelayanan & Kesehatan Gigi</h3>
           <div className="flex gap-4">
             <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-navy"></div>
-              <span className="text-[10px] font-bold text-navy/40 uppercase tracking-widest">DMF-T</span>
+              <div className="w-2.5 h-2.5 rounded-full bg-primary/20 border-2 border-primary"></div>
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">DMF-T</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-pink"></div>
-              <span className="text-[10px] font-bold text-navy/40 uppercase tracking-widest">OHI-S</span>
+              <div className="w-2.5 h-2.5 rounded-full bg-primary/10 border-2 border-primary/50"></div>
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">OHI-S</span>
             </div>
           </div>
         </div>
-        <div className="h-64">
+        <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={MOCK_CHART_DATA}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
               <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 600 }} />
               <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 600 }} />
               <Tooltip 
-                contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgba(15, 23, 42, 0.1)', padding: '16px' }}
+                contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', padding: '12px' }}
                 cursor={{ fill: '#f8fafc' }}
               />
-              <Bar dataKey="dmft" fill="#1e293b" radius={[6, 6, 0, 0]} barSize={20} />
-              <Bar dataKey="ohis" fill="#db2777" radius={[6, 6, 0, 0]} barSize={20} />
+              <Bar dataKey="dmft" fill="#db2777" radius={[4, 4, 0, 0]} barSize={24} />
+              <Bar dataKey="ohis" fill="#f472b6" radius={[4, 4, 0, 0]} barSize={24} />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
-      <div className="bg-white p-8 rounded-[2.5rem] border border-navy/5 shadow-sm">
-        <h3 className="font-bold text-navy uppercase tracking-widest text-[11px] mb-8">Prevalensi Penyakit</h3>
-        <div className="h-48">
+      <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm">
+        <h3 className="font-bold text-gray-700 uppercase tracking-widest text-[11px] mb-8 pb-4 border-b border-gray-50">Sebaran Kasus Pasien</h3>
+        <div className="h-56">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={MOCK_PIE_DATA}
-                innerRadius={60}
-                outerRadius={80}
-                paddingAngle={8}
+                innerRadius={65}
+                outerRadius={85}
+                paddingAngle={5}
                 dataKey="value"
               >
                 {MOCK_PIE_DATA.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                  <Cell key={`cell-${index}`} fill={entry.color} stroke="#fff" strokeWidth={2} />
                 ))}
               </Pie>
               <Tooltip 
-                contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgba(15, 23, 42, 0.1)', padding: '16px' }}
+                contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', padding: '12px' }}
               />
             </PieChart>
           </ResponsiveContainer>
         </div>
-        <div className="mt-6 space-y-3">
+        <div className="mt-8 space-y-3">
           {MOCK_PIE_DATA.map((item, i) => (
-            <div key={i} className="flex items-center justify-between">
+            <div key={i} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors">
               <div className="flex items-center gap-3">
                 <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: item.color }}></div>
-                <span className="text-[10px] font-bold text-navy/60 uppercase tracking-widest">{item.name}</span>
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{item.name}</span>
               </div>
-              <span className="text-[10px] font-bold text-navy">{item.value}%</span>
+              <span className="text-[10px] font-bold text-gray-900">{item.value}%</span>
             </div>
           ))}
         </div>
@@ -443,14 +439,14 @@ const SidebarItem = ({ to, icon: Icon, label, active, permission, userRole }: { 
     <Link 
       to={to}
       className={cn(
-        "flex items-center gap-4 px-6 py-3.5 rounded-xl transition-all duration-300 group relative overflow-hidden",
+        "flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 group relative",
         active 
-          ? "bg-navy-light text-white shadow-lg" 
-          : "text-white/50 hover:bg-white/10 hover:text-white"
+          ? "bg-primary text-white shadow-md shadow-primary/20" 
+          : "text-white/60 hover:bg-white/5 hover:text-white"
       )}
     >
-      <Icon size={18} className={cn("transition-transform duration-300", active ? "text-gold" : "group-hover:scale-110")} />
-      <span className={cn("text-[11px] font-bold uppercase tracking-widest transition-all", active ? "translate-x-1" : "")}>{label}</span>
+      <Icon size={18} className={cn("transition-colors", active ? "text-white" : "text-white/40 group-hover:text-white")} />
+      <span className={cn("text-sm font-medium transition-all")}>{label}</span>
     </Link>
   );
 };
@@ -528,95 +524,125 @@ const ProtectedRoute = ({ children, permission, userRole }: { children: React.Re
   return <>{children}</>;
 };
 
+const Breadcrumbs = () => {
+  const location = useLocation();
+  const pathnames = location.pathname.split('/').filter(x => x);
+  
+  return (
+    <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest px-8 py-3 bg-white border-b border-gray-100 mb-6 shadow-sm">
+      <Link to="/" className="hover:text-primary transition-colors flex items-center gap-1.5 translate-y-[-0.5px]">
+        <Home size={12} className="text-gray-300" />
+      </Link>
+      <ChevronRight size={10} className="text-gray-300" />
+      {pathnames.length === 0 ? (
+        <span className="text-primary">Dashboard</span>
+      ) : (
+        pathnames.map((name, index) => {
+          const isLast = index === pathnames.length - 1;
+          const displayName = name.charAt(0).toUpperCase() + name.slice(1).replace(/-/g, ' ');
+          return (
+            <React.Fragment key={name}>
+              {index > 0 && <ChevronRight size={10} className="text-gray-300" />}
+              <span className={cn(isLast ? "text-primary" : "text-gray-400")}>{displayName}</span>
+            </React.Fragment>
+          );
+        })
+      )}
+    </div>
+  );
+};
+
 const Layout = ({ children, userData, setUserData, onLogout }: { children: React.ReactNode, userData: { role: string, fullName: string, photoURL: string, jenisTenaga: string }, setUserData: any, onLogout: () => void }) => {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const location = useLocation();
 
   return (
-    <div className="min-h-screen bg-navy-50 flex dental-pattern">
+    <div className="min-h-screen bg-[#f3f4f6] flex">
       {/* Sidebar */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-navy-dark border-r border-white/5 transition-transform duration-300 transform lg:translate-x-0 lg:static lg:inset-0 shadow-2xl",
+        "fixed inset-y-0 left-0 z-50 w-64 bg-navy-dark border-r border-white/5 transition-transform duration-300 transform lg:translate-x-0 lg:static lg:inset-0 shadow-xl",
         !isSidebarOpen && "-translate-x-full"
       )}>
-        <div className="h-full flex flex-col p-6">
-          <div className="flex items-center gap-4 mb-10 px-2">
-            <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-gold font-bold text-xl shadow-inner border border-white/10 transform -rotate-3">
+        <div className="h-full flex flex-col p-4">
+          <div className="flex items-center gap-3 mb-8 px-2 py-4 border-b border-white/5">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-lg">
               S
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white tracking-tighter uppercase leading-none">SIGEMA KOPO</h2>
-              <p className="text-[7px] font-bold text-gold/60 uppercase tracking-[0.2em] mt-1">Sistem Kesehatan Gigi Masyarakat Kopo</p>
+              <h2 className="text-xs font-bold text-white tracking-tight leading-tight">Sistem Informasi Kesehatan Gigi Masyarakat</h2>
+              <p className="text-[9px] font-medium text-white/40 uppercase tracking-wider mt-0.5">UPTD Puskesmas Kopo</p>
             </div>
           </div>
 
           <nav className="flex-1 space-y-1 overflow-y-auto custom-scrollbar">
-            <p className="text-[9px] font-bold text-white/30 uppercase tracking-[0.2em] mb-4 ml-4">Menu Utama</p>
             <SidebarItem to="/" icon={LayoutDashboard} label="Dashboard" active={location.pathname === '/'} permission="dashboard" userRole={userData.role} />
+            <div className="py-2"></div>
+            <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest mb-2 px-4">Master Data</p>
             <SidebarItem to="/patients" icon={Users} label="Data Pasien" active={location.pathname.startsWith('/patients')} permission="patients" userRole={userData.role} />
-            <SidebarItem to="/records" icon={ClipboardList} label="Rekam Dental" active={location.pathname.startsWith('/records')} permission="records" userRole={userData.role} />
+            
+            <div className="py-2"></div>
+            <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest mb-2 px-4">Transaksi</p>
+            <SidebarItem to="/records" icon={ClipboardList} label="Pelayanan" active={location.pathname.startsWith('/records')} permission="records" userRole={userData.role} />
             <SidebarItem to="/informed-consent" icon={FileCheck} label="Informed Consent" active={location.pathname === '/informed-consent'} permission="informed-consent" userRole={userData.role} />
-            <SidebarItem to="/billing" icon={Receipt} label="Billing" active={location.pathname === '/billing'} permission="billing" userRole={userData.role} />
-            <SidebarItem to="/education" icon={Video} label="Edukasi Gigi" active={location.pathname === '/education'} permission="education" userRole={userData.role} />
-            <SidebarItem to="/appointments" icon={Calendar} label="Jadwal" active={location.pathname === '/appointments'} permission="appointments" userRole={userData.role} />
-            <SidebarItem to="/reports" icon={BarChart3} label="Pelaporan" active={location.pathname === '/reports'} permission="reports" userRole={userData.role} />
-            <SidebarItem to="/security" icon={ShieldCheck} label="Keamanan" active={location.pathname === '/security'} permission="security" userRole={userData.role} />
+            <SidebarItem to="/billing" icon={Receipt} label="Billing & Kasir" active={location.pathname === '/billing'} permission="billing" userRole={userData.role} />
+            
+            <div className="py-2"></div>
+            <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest mb-2 px-4">Pelaporan</p>
+            <SidebarItem to="/reports" icon={BarChart3} label="Statistik & Laporan" active={location.pathname === '/reports'} permission="reports" userRole={userData.role} />
+            <SidebarItem to="/education" icon={Video} label="Materi Edukasi" active={location.pathname === '/education'} permission="education" userRole={userData.role} />
+            <SidebarItem to="/appointments" icon={Calendar} label="Jadwal Reservasi" active={location.pathname === '/appointments'} permission="appointments" userRole={userData.role} />
           </nav>
 
-          <div className="pt-6 border-t border-white/5 space-y-1">
-            <p className="text-[9px] font-bold text-white/30 uppercase tracking-[0.2em] mb-4 ml-4">Sistem</p>
+          <div className="pt-4 border-t border-white/5 space-y-1">
             <SidebarItem to="/settings" icon={Settings} label="Pengaturan" active={location.pathname === '/settings'} permission="settings" userRole={userData.role} />
+            <SidebarItem to="/security" icon={ShieldCheck} label="Keamanan" active={location.pathname === '/security'} permission="security" userRole={userData.role} />
           </div>
         </div>
       </aside>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        {/* Abstract Background Elements */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-pink/5 rounded-full blur-[120px] -z-10 animate-pulse"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-navy/5 rounded-full blur-[120px] -z-10"></div>
-        
-        <header className="h-16 bg-white/80 backdrop-blur-md border-b border-navy/5 flex items-center justify-between px-6 sticky top-0 z-40">
+        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-40 shadow-sm">
           <button 
             onClick={() => setSidebarOpen(!isSidebarOpen)}
-            className="lg:hidden p-2 text-navy/60 hover:bg-navy-50 rounded-lg"
+            className="p-2 text-gray-400 hover:bg-gray-100 rounded-lg lg:hidden"
           >
             <Menu size={24} />
           </button>
 
           <div className="flex-1 max-w-md mx-4 hidden md:block">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/30" size={18} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
               <input 
                 type="text" 
-                placeholder="Cari pasien atau rekam medis..." 
-                className="w-full pl-10 pr-4 py-2 bg-navy-50 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-xl text-sm transition-all font-medium"
+                placeholder="Cari pasien atau layanan..." 
+                className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 focus:bg-white focus:border-primary focus:ring-1 focus:ring-primary/20 rounded-lg text-sm transition-all font-medium"
               />
             </div>
           </div>
 
           <div className="flex items-center gap-4">
-            <button className="p-2 text-navy/40 hover:bg-navy-50 rounded-full relative">
-              <Bell size={20} />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-pink rounded-full border-2 border-white"></span>
+            <button className="p-2 text-gray-400 hover:bg-gray-100 rounded-full relative">
+              <Bell size={18} />
+              <span className="absolute top-2 right-2 w-2 h-2 bg-danger rounded-full border-2 border-white"></span>
             </button>
-            <div className="h-8 w-px bg-navy/5 mx-2"></div>
-            <div className="flex items-center gap-3 relative">
+            <div className="h-6 w-px bg-gray-200 mx-1"></div>
+            <div className="flex items-center gap-3 relative mr-2">
               <div className="text-right hidden sm:block">
-                <p className="text-sm font-bold text-navy leading-none">{userData.fullName}</p>
-                <p className="text-[10px] font-semibold text-gold mt-1 uppercase tracking-wider">{userData.role}</p>
+                <p className="text-xs font-bold text-gray-800 leading-none">{userData.fullName}</p>
+                <p className="text-[9px] font-bold text-primary mt-0.5 uppercase tracking-wider">{userData.role}</p>
               </div>
               <div className="flex items-center gap-2">
                 <button 
                   onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                  className="w-9 h-9 rounded-full bg-navy border border-white shadow-md overflow-hidden hover:scale-105 transition-all"
+                  className="w-9 h-9 rounded-lg bg-gray-100 border border-gray-200 shadow-sm overflow-hidden hover:border-primary transition-all flex items-center justify-center p-0.5"
                 >
                   <img 
                     src={userData.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.fullName}`} 
                     alt="User" 
                     referrerPolicy="no-referrer" 
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover rounded-md"
                   />
                 </button>
                 
@@ -674,14 +700,15 @@ const Layout = ({ children, userData, setUserData, onLogout }: { children: React
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-x-hidden">
+          <Breadcrumbs />
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
             >
               <Routes>
                 <Route path="/" element={<ProtectedRoute permission="dashboard" userRole={userData.role}><Dashboard /></ProtectedRoute>} />

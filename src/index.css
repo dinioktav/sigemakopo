@@ -5,21 +5,24 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
   
-  --color-navy: #1e293b;
-  --color-navy-dark: #0f172a;
-  --color-navy-light: #334155;
-  --color-navy-50: #f8fafc;
+  --color-primary: #db2777;
+  --color-primary-dark: #be185d;
+  --color-success: #10b981;
+  --color-danger: #ef4444;
+  --color-warning: #f59e0b;
+  
+  --color-navy: #1f2937;
+  --color-navy-dark: #111827;
+  --color-navy-light: #374151;
+  --color-navy-50: #f9fafb;
+  
   --color-pink: #db2777;
-  --color-pink-dark: #be185d;
-  --color-pink-light: #f472b6;
-  --color-pink-soft: #fce7f3;
-  --color-gold: #d4af37;
-  --color-gold-light: #f1e4b8;
+  --color-gold: #d97706;
 }
 
 @layer base {
   body {
-    @apply text-navy antialiased;
+    @apply bg-[#f3f4f6] text-navy antialiased;
   }
 }
 

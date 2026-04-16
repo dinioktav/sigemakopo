@@ -608,105 +608,94 @@ export const PatientList = () => {
         )}
       </AnimatePresence>
 
-      <div className="glass-card rounded-[2.5rem] overflow-hidden">
-        <div className="p-8 border-b border-navy/5 flex flex-col md:flex-row gap-6 bg-navy-50/10">
-          <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-navy/30" size={20} />
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="p-4 border-b border-gray-100 bg-gray-50 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-semibold text-gray-700">Show</span>
+            <select className="bg-white border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+              <option>10</option>
+              <option>25</option>
+              <option>50</option>
+            </select>
+            <span className="text-sm font-semibold text-gray-700">entries</span>
+          </div>
+          
+          <div className="relative w-full md:w-80">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
             <input 
               type="text" 
-              placeholder="Cari berdasarkan Nama, NIK, atau No. RM..." 
-              className="w-full pl-12 pr-4 py-4 bg-white border-2 border-transparent focus:border-pink focus:ring-0 rounded-2xl text-sm transition-all font-medium shadow-sm"
+              placeholder="Cari NIK, Nama, atau No RM..." 
               value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all"
             />
           </div>
-          <button className="flex items-center gap-2 px-6 py-4 bg-white text-navy/60 border-2 border-transparent hover:border-pink hover:text-pink rounded-2xl font-black transition-all shadow-sm uppercase tracking-widest text-xs">
-            <Filter size={20} />
-            Filter
-          </button>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-navy-50/50 text-navy/30 text-[10px] uppercase tracking-[0.2em] font-black">
-                <th className="px-8 py-6">No RM</th>
-                <th className="px-8 py-6">Nama Pasien</th>
-                <th className="px-8 py-6">Identitas (NIK & TTL)</th>
-                <th className="px-8 py-6">Kontak</th>
-                <th className="px-8 py-6">Asuransi</th>
-                <th className="px-8 py-6 text-center">Aksi</th>
+              <tr className="bg-gray-50 text-gray-600 text-[11px] uppercase tracking-wider font-bold border-b border-gray-200">
+                <th className="px-6 py-4 border-r border-gray-200 text-center w-12">#</th>
+                <th className="px-6 py-4 border-r border-gray-200">No RM</th>
+                <th className="px-6 py-4 border-r border-gray-200">Pasien</th>
+                <th className="px-8 py-4 border-r border-gray-200">Asuransi</th>
+                <th className="px-6 py-4 border-r border-gray-200">Kontak</th>
+                <th className="px-6 py-4 text-center">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-navy/5">
-              {filteredPatients.map((patient) => (
-                <tr key={patient.id} className="hover:bg-pink-soft/30 transition-colors group">
-                  <td className="px-8 py-6">
-                    <p className="text-xs font-black text-navy tracking-widest">{patient.rmNumber || '-'}</p>
+            <tbody className="divide-y divide-gray-200">
+              {filteredPatients.map((patient, index) => (
+                <tr key={patient.id} className="hover:bg-blue-50/50 transition-colors">
+                  <td className="px-6 py-4 text-center text-[10px] font-bold text-gray-400 border-r border-gray-100">{index + 1}</td>
+                  <td className="px-6 py-4 border-r border-gray-100">
+                    <p className="text-[10px] font-bold text-primary tracking-tight">{patient.rmNumber || '-'}</p>
                   </td>
-                  <td className="px-8 py-6">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-navy text-gold flex items-center justify-center font-black text-sm shadow-lg shadow-navy/10 group-hover:scale-110 transition-transform">
-                        {patient.name?.charAt(0)}
+                  <td className="px-6 py-4 border-r border-gray-100">
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold text-gray-800">{patient.name}</p>
+                      <div className="flex flex-wrap gap-1">
+                        <span className="text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-bold">{patient.nik}</span>
+                        <span className="text-[9px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-bold uppercase">{patient.birthPlace}, {patient.birthDate}</span>
                       </div>
-                      <p className="text-sm font-black text-navy uppercase tracking-tight">{patient.name}</p>
                     </div>
                   </td>
-                  <td className="px-8 py-6">
-                    <div className="space-y-1.5">
-                      <p className="text-xs text-navy/60 font-bold flex items-center gap-2">
-                        <CreditCard size={14} className="text-navy/20" /> {patient.nik}
-                      </p>
-                      <p className="text-[10px] text-navy/40 font-medium flex items-center gap-2">
-                        <Calendar size={14} className="text-navy/20" /> {patient.birthPlace}, {patient.birthDate}
-                      </p>
-                    </div>
-                  </td>
-                  <td className="px-8 py-6">
-                    <p className="text-xs text-navy/60 font-bold flex items-center gap-2">
-                      <Phone size={14} className="text-navy/20" /> {patient.phone}
-                    </p>
-                  </td>
-                  <td className="px-8 py-6">
+                  <td className="px-6 py-4 border-r border-gray-100">
                     <span className={cn(
-                      "text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest border",
-                      patient.paymentMethod === 'BPJS' 
-                        ? "bg-pink-soft text-pink border-pink-soft" 
-                        : "bg-navy-50 text-navy border-navy-50"
+                      "text-[9px] font-bold px-2 py-1 rounded-md uppercase tracking-wider text-white",
+                      patient.paymentMethod === 'BPJS' ? "bg-success" : "bg-primary"
                     )}>
                       {patient.paymentMethod === 'BPJS' ? 'BPJS' : 'Umum'}
                     </span>
                   </td>
-                  <td className="px-8 py-6">
+                  <td className="px-6 py-4 border-r border-gray-100">
+                    <p className="text-[10px] text-gray-600 font-bold">{patient.phone || '-'}</p>
+                  </td>
+                  <td className="px-6 py-4">
                     <div className="flex items-center justify-center gap-2">
                       <button 
                         onClick={() => navigate(`/records?patientId=${patient.id}`)}
-                        className="flex items-center gap-1.5 px-3 py-2 bg-navy text-gold rounded-xl font-black hover:bg-navy-light transition-all uppercase tracking-widest text-[9px] border border-gold/20"
-                        title="Layani"
+                        className="px-3 py-1.5 bg-primary text-white rounded text-[10px] font-bold hover:bg-primary-dark transition-all flex items-center gap-1.5 shadow-sm shadow-primary/10 uppercase tracking-wider"
                       >
-                        <Stethoscope size={14} />
+                        <Stethoscope size={12} />
                         Layani
                       </button>
-                      <button 
-                        className="p-2 text-navy/20 hover:text-navy hover:bg-navy-50 rounded-xl transition-all"
-                        title="Lihat Riwayat RM"
-                      >
-                        <History size={18} />
-                      </button>
-                      <button 
-                        onClick={() => handleEdit(patient)}
-                        className="p-2 text-navy/20 hover:text-pink hover:bg-pink-soft rounded-xl transition-all"
-                        title="Edit"
-                      >
-                        <Edit3 size={18} />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(patient.id)}
-                        className="p-2 text-navy/20 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
-                        title="Hapus"
-                      >
-                        <Trash2 size={18} />
-                      </button>
+                      <div className="flex items-center gap-1 border-l border-gray-200 pl-2">
+                        <button 
+                          onClick={() => handleEdit(patient)}
+                          className="p-1.5 text-gray-400 hover:text-primary hover:bg-gray-100 rounded transition-all"
+                          title="Edit"
+                        >
+                          <Edit3 size={16} />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(patient.id)}
+                          className="p-1.5 text-gray-400 hover:text-danger hover:bg-red-50 rounded transition-all"
+                          title="Hapus"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </div>
                   </td>
                 </tr>
@@ -725,11 +714,11 @@ export const PatientList = () => {
           </table>
         </div>
 
-        <div className="p-8 bg-navy-50/30 border-t border-navy/5 flex items-center justify-between">
-          <p className="text-xs text-navy/40 font-bold uppercase tracking-widest">Menampilkan {filteredPatients.length} dari {patients.length} pasien</p>
-          <div className="flex gap-3">
-            <button className="px-6 py-3 bg-white border border-navy/5 rounded-xl text-[10px] font-black text-navy/20 cursor-not-allowed uppercase tracking-widest">Sebelumnya</button>
-            <button className="px-6 py-3 bg-white border border-navy/5 rounded-xl text-[10px] font-black text-navy hover:border-pink hover:text-pink transition-all shadow-sm uppercase tracking-widest">Selanjutnya</button>
+        <div className="p-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+          <p className="text-xs text-gray-500 font-semibold uppercase tracking-tight">Showing {filteredPatients.length} of {patients.length} entries</p>
+          <div className="flex gap-2">
+            <button className="px-4 py-1.5 bg-white border border-gray-300 rounded text-[10px] font-bold text-gray-400 cursor-not-allowed uppercase tracking-wider transition-all">Previous</button>
+            <button className="px-4 py-1.5 bg-white border border-gray-300 rounded text-[10px] font-bold text-gray-700 hover:bg-gray-50 hover:border-primary hover:text-primary transition-all shadow-sm uppercase tracking-wider">Next</button>
           </div>
         </div>
       </div>
