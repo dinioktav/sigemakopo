@@ -29,7 +29,7 @@ import { Odontogram } from './Odontogram';
 import SignaturePad from 'signature_pad';
 import { GoogleGenAI } from "@google/genai";
 import { collection, query, orderBy, onSnapshot, addDoc, Timestamp } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { ASKESGILUT_DIAGNOSES } from '../constants/askesgilut';
 
 const STEPS = [
@@ -236,6 +236,8 @@ export const DentalHygieneForm = () => {
       if (patientIdParam) {
         setSelectedPatientId(patientIdParam);
       }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'patients');
     });
     return () => unsubscribe();
   }, [patientIdParam]);
@@ -266,8 +268,7 @@ export const DentalHygieneForm = () => {
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error) {
-      console.error("Error saving progress:", error);
-      alert("Gagal menyimpan progress. Silakan coba lagi.");
+      handleFirestoreError(error, OperationType.WRITE, 'dental_records');
     } finally {
       setIsSaving(false);
     }

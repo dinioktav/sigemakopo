@@ -12,12 +12,17 @@ import {
   LogOut
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
+import { motion } from 'motion/react';
 
 export const Security = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [twoFactor, setTwoFactor] = useState(true);
 
-  const activityLogs: any[] = [];
+  const activityLogs = [
+    { id: 1, action: 'Login Berhasil', device: 'Chrome on Windows', time: '2 menit yang lalu', status: 'Success' },
+    { id: 2, action: 'Perubahan Password', device: 'Chrome on Windows', time: '1 jam yang lalu', status: 'Success' },
+    { id: 3, action: 'Gagal Login', device: 'Unknown Device', time: '3 jam yang lalu', status: 'Warning' },
+  ];
 
   return (
     <div className="p-8">
@@ -108,18 +113,34 @@ export const Security = () => {
         {/* Right Column - Security Status */}
         <div className="space-y-8">
           {/* Security Score */}
-          <div className="bg-navy p-8 rounded-[2.5rem] text-white shadow-2xl shadow-navy/20 relative overflow-hidden">
-            <div className="absolute -top-10 -right-10 w-40 h-40 bg-pink/20 rounded-full blur-3xl"></div>
+          <div className="bg-navy-dark p-8 rounded-[3rem] text-white shadow-2xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-pink/20 rounded-full blur-[80px] -z-0 group-hover:bg-pink/30 transition-all duration-700"></div>
             <div className="relative z-10">
-              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-6">Skor Keamanan Akun</h3>
-              <div className="flex items-end gap-2 mb-4">
-                <span className="text-6xl font-black tracking-tighter text-pink">0</span>
-                <span className="text-xl font-black opacity-40 mb-2">/100</span>
+              <div className="flex items-center gap-3 mb-8">
+                <ShieldCheck className="text-pink shrink-0" size={32} />
+                <h3 className="text-xs font-black uppercase tracking-[0.3em] opacity-80">Skor Keamanan Sistem</h3>
               </div>
-              <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden mb-6">
-                <div className="w-[0%] h-full bg-pink"></div>
+              
+              <div className="flex items-baseline gap-2 mb-2">
+                <span className="text-7xl font-black tracking-tighter text-white">85</span>
+                <span className="text-2xl font-black text-pink">/100</span>
               </div>
-              <p className="text-[10px] font-bold opacity-60 leading-relaxed">Akun Anda sangat aman. Aktifkan 2FA untuk mencapai skor maksimal.</p>
+              <p className="text-[11px] font-bold text-white/40 uppercase tracking-widest mb-8">Status: Sangat Aman</p>
+              
+              <div className="space-y-4">
+                <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden border border-white/10">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: '85%' }}
+                    transition={{ duration: 1, ease: "easeOut" }}
+                    className="h-full bg-gradient-to-r from-pink to-pink-light shadow-[0_0_20px_rgba(219,39,119,0.5)]"
+                  ></motion.div>
+                </div>
+                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest opacity-40">
+                  <span>Lemah</span>
+                  <span>Kuat</span>
+                </div>
+              </div>
             </div>
           </div>
 

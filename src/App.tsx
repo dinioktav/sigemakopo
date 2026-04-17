@@ -25,7 +25,8 @@ import {
   Camera,
   User,
   Briefcase,
-  Save
+  Save,
+  Download
 } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -33,8 +34,11 @@ import { cn } from '@/src/lib/utils';
 import { Login } from './components/Login';
 import { auth, db } from './lib/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { GoogleGenAI } from "@google/genai";
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 import { 
   BarChart, 
   Bar, 
@@ -326,6 +330,23 @@ const Dashboard = () => (
 const Reports = () => {
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [records, setRecords] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
+  useEffect(() => {
+    const q = query(collection(db, 'dental_records'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setRecords(data);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const handleAIAnalysis = async () => {
     setIsAnalyzing(true);
@@ -350,33 +371,135 @@ const Reports = () => {
     }
   };
 
+  const exportPDF = () => {
+    const doc = new jsPDF();
+    const filtered = records.filter(r => {
+      const date = r.createdAt?.toDate ? r.createdAt.toDate() : new Date(r.visitDate);
+      return (date.getMonth() + 1) === selectedMonth && date.getFullYear() === selectedYear;
+    });
+
+    doc.setFontSize(18);
+    doc.text('Laporan Bulanan Pelayanan Gigi', 14, 22);
+    doc.setFontSize(11);
+    doc.text(`Periode: ${selectedMonth}/${selectedYear}`, 14, 30);
+    doc.text(`SIGEMA KOPO - UPTD Puskesmas Kopo`, 14, 38);
+
+    const tableData = filtered.map(r => [
+      r.visitDate,
+      r.patientId, // In real case, join with patient name
+      r.askesgilut?.diagnoses?.map((d: any) => d.kebutuhan).join(', ') || '-',
+      `Rp ${(r.billing?.total || 0).toLocaleString()}`
+    ]);
+
+    autoTable(doc, {
+      startY: 45,
+      head: [['Tanggal', 'ID Pasien', 'Layanan/Diagnosis', 'Billing']],
+      body: tableData,
+    });
+
+    doc.save(`Laporan_Bulanan_${selectedMonth}_${selectedYear}.pdf`);
+  };
+
+  const exportExcel = () => {
+    const filtered = records.filter(r => {
+      const date = r.createdAt?.toDate ? r.createdAt.toDate() : new Date(r.visitDate);
+      return (date.getMonth() + 1) === selectedMonth && date.getFullYear() === selectedYear;
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(filtered.map(r => ({
+      'Tanggal': r.visitDate,
+      'ID Pasien': r.patientId,
+      'Layanan': r.askesgilut?.diagnoses?.map((d: any) => d.kebutuhan).join(', ') || '-',
+      'Total Billing': r.billing?.total || 0,
+      'Status Bayar': r.billing?.status || 'Pending'
+    })));
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Laporan');
+    XLSX.writeFile(workbook, `Laporan_Bulanan_${selectedMonth}_${selectedYear}.xlsx`);
+  };
+
   return (
     <div className="p-8">
       <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-bold text-navy tracking-tight uppercase">Pelaporan Agregat</h1>
+          <h1 className="text-3xl font-bold text-navy tracking-tight uppercase">Statistik & Laporan</h1>
           <p className="text-navy/40 font-medium mt-1">Analisis data kesehatan gigi dan mulut populasi.</p>
         </div>
-        <button 
-          onClick={handleAIAnalysis}
-          disabled={isAnalyzing}
-          className="flex items-center justify-center gap-3 px-8 py-4 bg-pink text-white rounded-2xl font-bold hover:bg-pink-dark shadow-xl shadow-pink/20 transition-all uppercase tracking-widest text-xs disabled:opacity-50"
-        >
-          {isAnalyzing ? <RefreshCw className="animate-spin" size={20} /> : <Activity size={20} />}
-          {isAnalyzing ? 'Menganalisis...' : 'Analisis AI'}
-        </button>
+        <div className="flex gap-4">
+          <button 
+            onClick={handleAIAnalysis}
+            disabled={isAnalyzing}
+            className="flex items-center justify-center gap-3 px-8 py-4 bg-pink text-white rounded-2xl font-bold hover:bg-pink-dark shadow-xl shadow-pink/20 transition-all uppercase tracking-widest text-xs disabled:opacity-50"
+          >
+            {isAnalyzing ? <RefreshCw className="animate-spin" size={20} /> : <Activity size={20} />}
+            {isAnalyzing ? 'Menganalisis...' : 'Analisis AI'}
+          </button>
+        </div>
       </header>
+
+      {/* Monthly Report Controls */}
+      <div className="glass-card p-10 rounded-[3rem] mb-10 bg-navy text-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-pink/20 rounded-full blur-[80px] -z-0"></div>
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-8">
+            <ClipboardList className="text-pink" size={24} />
+            <h3 className="text-xs font-black uppercase tracking-[0.3em] opacity-80">Export Laporan Bulanan</h3>
+          </div>
+          
+          <div className="flex flex-col md:flex-row gap-6 items-end">
+            <div className="flex-1 space-y-2">
+              <label className="text-[10px] font-black text-white/40 uppercase tracking-widest ml-4">Pilih Bulan</label>
+              <select 
+                value={selectedMonth}
+                onChange={e => setSelectedMonth(parseInt(e.target.value))}
+                className="w-full px-6 py-4 bg-white/10 border-2 border-transparent focus:bg-white focus:text-navy focus:border-pink rounded-2xl text-sm font-bold transition-all appearance-none"
+              >
+                {Array.from({length: 12}).map((_, i) => (
+                  <option key={i+1} value={i+1}>{new Date(2000, i).toLocaleString('id-ID', {month: 'long'})}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex-1 space-y-2">
+              <label className="text-[10px] font-black text-white/40 uppercase tracking-widest ml-4">Pilih Tahun</label>
+              <select 
+                value={selectedYear}
+                onChange={e => setSelectedYear(parseInt(e.target.value))}
+                className="w-full px-6 py-4 bg-white/10 border-2 border-transparent focus:bg-white focus:text-navy focus:border-pink rounded-2xl text-sm font-bold transition-all appearance-none"
+              >
+                {[2024, 2025, 2026].map(year => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex gap-4">
+              <button 
+                onClick={exportPDF}
+                className="flex items-center justify-center gap-2 px-6 py-4 bg-pink text-white rounded-2xl font-black hover:bg-pink-dark transition-all uppercase tracking-widest text-[10px]"
+              >
+                <Download size={18} /> Export PDF
+              </button>
+              <button 
+                onClick={exportExcel}
+                className="flex items-center justify-center gap-2 px-6 py-4 bg-green-500 text-white rounded-2xl font-black hover:bg-green-600 transition-all uppercase tracking-widest text-[10px]"
+              >
+                <TrendingUp size={18} /> Export Excel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
         {[
-          { label: 'Rata-rata OHI-S', value: '0.0', status: 'N/A', color: 'text-pink', bg: 'bg-pink-soft' },
-          { label: 'Rata-rata DMF-T', value: '0.0', status: 'N/A', color: 'text-navy', bg: 'bg-navy-50' },
-          { label: 'Cakupan Pelayanan', value: '0%', status: 'N/A', color: 'text-pink-light', bg: 'bg-pink-soft/50' },
+          { label: 'Total Rekam Medis', value: records.length, status: 'Total', color: 'text-pink', bg: 'bg-pink-soft' },
+          { label: 'Bulan Ini', value: records.filter(r => (r.createdAt?.toDate ? r.createdAt.toDate().getMonth() : new Date(r.visitDate).getMonth()) === new Date().getMonth()).length, status: 'Aktif', color: 'text-navy', bg: 'bg-navy-50' },
+          { label: 'Total Billing', value: `Rp ${records.reduce((acc, r) => acc + (r.billing?.total || 0), 0).toLocaleString()}`, status: 'Pendapatan', color: 'text-pink-light', bg: 'bg-pink-soft/50' },
         ].map((item, i) => (
           <div key={i} className="bg-white p-8 rounded-[2.5rem] border border-navy/5 shadow-sm">
             <p className="text-[10px] text-navy/30 font-bold uppercase tracking-widest mb-2">{item.label}</p>
             <div className="flex items-end gap-3">
-              <p className="text-4xl font-bold text-navy tracking-tighter">{item.value}</p>
+              <p className="text-3xl font-bold text-navy tracking-tighter">{item.value}</p>
               <span className={cn("text-[9px] font-bold px-3 py-1 rounded-full mb-1 uppercase tracking-widest", item.bg, item.color)}>
                 {item.status}
               </span>

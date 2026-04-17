@@ -19,7 +19,7 @@ import {
   PenTool
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
-import { db } from '../lib/firebase';
+import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, addDoc, onSnapshot, query, orderBy, Timestamp, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import SignaturePad from 'signature_pad';
 import { 
@@ -34,6 +34,8 @@ export const PatientList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [patients, setPatients] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [patientToDelete, setPatientToDelete] = useState<string | null>(null);
   const [editingPatientId, setEditingPatientId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -123,6 +125,8 @@ export const PatientList = () => {
         ...doc.data()
       }));
       setPatients(patientData);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'patients');
     });
     return () => unsubscribe();
   }, []);
@@ -172,8 +176,10 @@ export const PatientList = () => {
         });
       } else {
         const year = new Date().getFullYear();
-        const count = patients.length + 1;
-        const rmNumber = `${year}/${count.toString().padStart(5, '0')}`;
+        // Get patients registered in current year to determine next number
+        const yearPatients = patients.filter(p => p.rmNumber && p.rmNumber.endsWith(`/${year}`));
+        const count = yearPatients.length + 1;
+        const rmNumber = `${count.toString().padStart(3, '0')}/${year}`;
         
         await addDoc(collection(db, 'patients'), {
           ...newPatient,
@@ -212,8 +218,7 @@ export const PatientList = () => {
         signature: ''
       });
     } catch (error) {
-      console.error("Error saving patient:", error);
-      alert("Gagal menyimpan data pasien. Silakan coba lagi.");
+      handleFirestoreError(error, OperationType.WRITE, 'patients');
     } finally {
       setLoading(false);
     }
@@ -252,14 +257,23 @@ export const PatientList = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm("Apakah Anda yakin ingin menghapus data pasien ini?")) {
-      try {
-        await deleteDoc(doc(db, 'patients', id));
-      } catch (error) {
-        console.error("Error deleting patient:", error);
-        alert("Gagal menghapus data pasien.");
-      }
+  const handleDelete = (id: string) => {
+    setPatientToDelete(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!patientToDelete) return;
+    
+    setLoading(true);
+    try {
+      await deleteDoc(doc(db, 'patients', patientToDelete));
+      setIsDeleteModalOpen(false);
+      setPatientToDelete(null);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, 'patients');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -285,6 +299,49 @@ export const PatientList = () => {
           Tambah Pasien Baru
         </button>
       </header>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {isDeleteModalOpen && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-navy/60 backdrop-blur-sm" 
+              onClick={() => setIsDeleteModalOpen(false)}
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white w-full max-w-sm rounded-[2.5rem] shadow-2xl relative z-10 p-8 text-center"
+            >
+              <div className="w-20 h-20 bg-red-50 text-danger rounded-3xl flex items-center justify-center mx-auto mb-6">
+                <Trash2 size={40} />
+              </div>
+              <h3 className="text-xl font-black text-navy uppercase tracking-tight mb-2">Hapus Pasien?</h3>
+              <p className="text-navy/60 text-sm font-medium mb-8">Data yang sudah dihapus tidak dapat dikembalikan lagi.</p>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <button 
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  className="py-4 bg-gray-100 text-navy/60 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-gray-200 transition-all"
+                >
+                  Batal
+                </button>
+                <button 
+                  onClick={confirmDelete}
+                  disabled={loading}
+                  className="py-4 bg-danger text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-red-600 transition-all shadow-lg shadow-red-200 flex items-center justify-center gap-2"
+                >
+                  {loading ? <RefreshCw size={14} className="animate-spin" /> : 'Ya, Hapus'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Add Patient Modal */}
       <AnimatePresence>

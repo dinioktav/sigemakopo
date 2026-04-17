@@ -165,9 +165,9 @@ export const Login = ({ onLogin }: LoginProps) => {
         });
         
         if (needsApproval) {
-          alert('Pendaftaran berhasil! Akun Anda memerlukan persetujuan Super Admin sebelum dapat digunakan.');
+          setMessage('Pendaftaran berhasil! Akun Anda memerlukan persetujuan Super Admin sebelum dapat digunakan.');
         } else {
-          alert('Akun berhasil dibuat! Silakan login.');
+          setMessage('Akun berhasil dibuat! Silakan login.');
         }
         setIsRegistering(false);
         generateCaptcha();
@@ -221,8 +221,20 @@ export const Login = ({ onLogin }: LoginProps) => {
               </div>
             </div>
 
-            {error && <p className="text-[10px] text-pink font-black text-center uppercase tracking-tighter">{error}</p>}
-            {message && <p className="text-[10px] text-green-600 font-black text-center uppercase tracking-tighter">{message}</p>}
+            {error && (
+              <div className="p-4 bg-pink-soft/50 border border-pink/20 rounded-2xl animate-in zoom-in duration-300">
+                <p className="text-[10px] text-pink font-black text-center uppercase tracking-tighter leading-relaxed">
+                  {error}
+                </p>
+              </div>
+            )}
+            {message && (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-2xl animate-in zoom-in duration-300">
+                <p className="text-[10px] text-green-600 font-black text-center uppercase tracking-tighter leading-relaxed">
+                  {message}
+                </p>
+              </div>
+            )}
 
             <button 
               type="submit"
@@ -324,35 +336,71 @@ export const Login = ({ onLogin }: LoginProps) => {
           )}
 
           <div className="space-y-4">
-            <label className="text-xs font-black text-navy/70 uppercase tracking-wider">Verifikasi Keamanan</label>
+            <div className="flex items-center justify-between ml-4">
+              <label className="text-xs font-black text-navy/70 uppercase tracking-wider">Verifikasi Keamanan</label>
+              <span className="text-[10px] font-bold text-pink animate-pulse">Wajib Diisi</span>
+            </div>
             <div className="flex items-center gap-4">
-              <div className="flex-1 bg-navy p-4 rounded-2xl flex items-center justify-center select-none shadow-inner">
-                <span className="text-2xl font-black text-pink-light tracking-[0.5em] italic opacity-90 line-through decoration-pink">
+              <div className="flex-1 bg-navy-dark h-20 rounded-2xl flex items-center justify-center select-none shadow-2xl relative overflow-hidden group">
+                {/* Visual noise/security pattern background */}
+                <div className="absolute inset-0 opacity-10 pointer-events-none" 
+                     style={{ backgroundImage: 'radial-gradient(circle, #db2777 1px, transparent 1px)', backgroundSize: '10px 10px' }}></div>
+                
+                <span className="text-3xl font-black text-white tracking-[0.6em] italic opacity-100 drop-shadow-[0_0_10px_rgba(219,39,119,0.5)] transform -skew-x-12 select-none">
                   {captchaText}
                 </span>
+                
+                {/* Decorative barrier lines */}
+                <div className="absolute inset-0 flex flex-col justify-around pointer-events-none opacity-20">
+                  <div className="h-[1px] w-full bg-pink"></div>
+                  <div className="h-[1px] w-full bg-pink translate-x-10"></div>
+                </div>
               </div>
               <button 
                 type="button"
                 onClick={generateCaptcha}
-                className="p-4 bg-pink-soft text-pink rounded-2xl hover:bg-pink-200 transition-all shadow-sm"
+                className="p-5 bg-white text-navy border-2 border-navy/5 rounded-2xl hover:bg-navy hover:text-white transition-all shadow-xl group"
+                title="Ganti Kode"
               >
-                <RefreshCw size={24} />
+                <RefreshCw size={24} className="group-hover:rotate-180 transition-transform duration-500" />
               </button>
             </div>
-            <input 
-              type="text" 
-              required
-              className={cn(
-                "w-full p-4 bg-navy-50 border-2 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-2xl text-sm transition-all text-center font-black tracking-widest",
-                error && "border-pink bg-pink-soft/50"
+            <div className="relative">
+              <input 
+                type="text" 
+                required
+                autoComplete="off"
+                className={cn(
+                  "w-full p-5 bg-navy-50 border-2 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-2xl text-lg transition-all text-center font-black tracking-[0.3em] uppercase",
+                  error && "border-pink bg-pink-soft/50 shadow-lg shadow-pink/10"
+                )}
+                placeholder="MASUKKAN KODE"
+                value={captchaInput}
+                onChange={(e) => setCaptchaInput(e.target.value)}
+              />
+              {captchaInput && captchaInput.toUpperCase() === captchaText && (
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-green-500 animate-in zoom-in duration-300">
+                  <ShieldCheck size={24} />
+                </div>
               )}
-              placeholder="Ketik kode di atas"
-              value={captchaInput}
-              onChange={(e) => setCaptchaInput(e.target.value)}
-            />
+            </div>
           </div>
 
-          {error && <p className="text-[10px] text-pink font-black text-center uppercase tracking-tighter">{error}</p>}
+          {error && (
+            <div className="p-4 bg-pink-soft/50 border border-pink/20 rounded-2xl animate-in zoom-in duration-300">
+              <p className="text-[10px] text-pink font-black text-center uppercase tracking-tighter leading-relaxed">
+                {error}
+              </p>
+            </div>
+          )}
+
+          {message && (
+            <div className="p-4 bg-green-50 border border-green-200 rounded-2xl animate-in zoom-in duration-300">
+              <p className="text-[10px] text-green-600 font-black text-center uppercase tracking-tighter leading-relaxed">
+                {message}
+              </p>
+            </div>
+          )}
 
           <div className="space-y-3">
             <button 

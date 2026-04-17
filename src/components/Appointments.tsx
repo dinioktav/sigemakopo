@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/src/lib/utils';
-import { db } from '../lib/firebase';
+import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, addDoc, onSnapshot, query, orderBy, Timestamp } from 'firebase/firestore';
 
 export const Appointments = ({ userData }: { userData: any }) => {
@@ -50,11 +50,15 @@ export const Appointments = ({ userData }: { userData: any }) => {
     const qA = query(collection(db, 'appointments'), orderBy('plannedDate', 'asc'));
     const unsubscribeA = onSnapshot(qA, (snapshot) => {
       setAppointments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'appointments');
     });
 
     const qP = query(collection(db, 'patients'), orderBy('name', 'asc'));
     const unsubscribeP = onSnapshot(qP, (snapshot) => {
       setPatients(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'patients');
     });
 
     return () => {

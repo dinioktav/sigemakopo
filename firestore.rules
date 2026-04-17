@@ -104,6 +104,15 @@ service cloud.firestore {
     }
 
     // ===============================================================
+    // Appointments
+    // ===============================================================
+    match /appointments/{appointmentId} {
+      allow read: if hasAnyRole(['Super Admin', 'Administrasi Umum', 'Terapis Gigi dan Mulut', 'Dosen Pembimbing']);
+      allow create: if isAuthenticated();
+      allow update, delete: if hasAnyRole(['Super Admin', 'Administrasi Umum']);
+    }
+
+    // ===============================================================
     // Dental Records
     // ===============================================================
     match /dental_records/{recordId} {
