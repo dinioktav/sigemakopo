@@ -553,7 +553,7 @@ const Reports = () => {
   );
 };
 
-const SidebarItem = ({ to, icon: Icon, label, active, permission, userRole }: { to: string, icon: any, label: string, active: boolean, permission: string, userRole: string }) => {
+const SidebarItem = ({ to, icon: Icon, label, active, permission, userRole, isCollapsed }: { to: string, icon: any, label: string, active: boolean, permission: string, userRole: string, isCollapsed?: boolean }) => {
   const hasPermission = PERMISSIONS[userRole]?.includes(permission);
   
   if (!hasPermission) return null;
@@ -561,15 +561,17 @@ const SidebarItem = ({ to, icon: Icon, label, active, permission, userRole }: { 
   return (
     <Link 
       to={to}
+      title={isCollapsed ? label : ""}
       className={cn(
-        "flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 group relative",
+        "flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 group relative whitespace-nowrap overflow-hidden",
         active 
           ? "bg-primary text-white shadow-md shadow-primary/20" 
-          : "text-white/60 hover:bg-white/5 hover:text-white"
+          : "text-white/60 hover:bg-white/5 hover:text-white",
+        isCollapsed && "justify-center px-0"
       )}
     >
-      <Icon size={18} className={cn("transition-colors", active ? "text-white" : "text-white/40 group-hover:text-white")} />
-      <span className={cn("text-sm font-medium transition-all")}>{label}</span>
+      <Icon size={18} className={cn("transition-colors shrink-0", active ? "text-white" : "text-white/40 group-hover:text-white")} />
+      {!isCollapsed && <span className={cn("text-sm font-medium transition-all")}>{label}</span>}
     </Link>
   );
 };
@@ -677,6 +679,7 @@ const Breadcrumbs = () => {
 
 const Layout = ({ children, userData, setUserData, onLogout }: { children: React.ReactNode, userData: { role: string, fullName: string, photoURL: string, jenisTenaga: string }, setUserData: any, onLogout: () => void }) => {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const location = useLocation();
 
@@ -684,42 +687,53 @@ const Layout = ({ children, userData, setUserData, onLogout }: { children: React
     <div className="min-h-screen bg-[#f3f4f6] flex">
       {/* Sidebar */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-navy-dark border-r border-white/5 transition-transform duration-300 transform lg:translate-x-0 lg:static lg:inset-0 shadow-xl",
+        "fixed inset-y-0 left-0 z-50 bg-navy-dark border-r border-white/5 transition-all duration-300 transform lg:translate-x-0 lg:static lg:inset-0 shadow-xl flex flex-col",
+        isSidebarCollapsed ? "w-20" : "w-64",
         !isSidebarOpen && "-translate-x-full"
       )}>
         <div className="h-full flex flex-col p-4">
-          <div className="flex items-center gap-3 mb-8 px-2 py-4 border-b border-white/5">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-lg">
+          <div className={cn("flex items-center mb-8 px-2 py-4 border-b border-white/5 relative", isSidebarCollapsed ? "justify-center" : "gap-3")}>
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-lg shrink-0">
               S
             </div>
-            <div>
-              <h2 className="text-xs font-bold text-white tracking-tight leading-tight">Sistem Informasi Kesehatan Gigi Masyarakat</h2>
-              <p className="text-[9px] font-medium text-white/40 uppercase tracking-wider mt-0.5">UPTD Puskesmas Kopo</p>
-            </div>
+            {!isSidebarCollapsed && (
+              <div className="overflow-hidden">
+                <h2 className="text-xs font-bold text-white tracking-tight leading-tight truncate">Sistem Informasi Kesehatan Gigi Masyarakat</h2>
+                <p className="text-[9px] font-medium text-white/40 uppercase tracking-wider mt-0.5 truncate">UPTD Puskesmas Kopo</p>
+              </div>
+            )}
+            
+            {/* Desktop Collapse Toggle */}
+            <button 
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              className="absolute -right-7 top-1/2 -translate-y-1/2 w-6 h-6 bg-navy-dark border border-white/5 rounded-full hidden lg:flex items-center justify-center text-white/40 hover:text-white transition-all z-10"
+            >
+              <ChevronRight size={12} className={cn("transition-transform", !isSidebarCollapsed && "rotate-180")} />
+            </button>
           </div>
 
-          <nav className="flex-1 space-y-1 overflow-y-auto custom-scrollbar">
-            <SidebarItem to="/" icon={LayoutDashboard} label="Dashboard" active={location.pathname === '/'} permission="dashboard" userRole={userData.role} />
+          <nav className="flex-1 space-y-1 overflow-y-auto custom-scrollbar overflow-x-hidden">
+            <SidebarItem to="/" icon={LayoutDashboard} label="Dashboard" active={location.pathname === '/'} permission="dashboard" userRole={userData.role} isCollapsed={isSidebarCollapsed} />
             <div className="py-2"></div>
-            <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest mb-2 px-4">Master Data</p>
-            <SidebarItem to="/patients" icon={Users} label="Data Pasien" active={location.pathname.startsWith('/patients')} permission="patients" userRole={userData.role} />
+            {!isSidebarCollapsed && <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest mb-2 px-4">Master Data</p>}
+            <SidebarItem to="/patients" icon={Users} label="Data Pasien" active={location.pathname.startsWith('/patients')} permission="patients" userRole={userData.role} isCollapsed={isSidebarCollapsed} />
             
             <div className="py-2"></div>
-            <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest mb-2 px-4">Transaksi</p>
-            <SidebarItem to="/records" icon={ClipboardList} label="Pelayanan" active={location.pathname.startsWith('/records')} permission="records" userRole={userData.role} />
-            <SidebarItem to="/informed-consent" icon={FileCheck} label="Informed Consent" active={location.pathname === '/informed-consent'} permission="informed-consent" userRole={userData.role} />
-            <SidebarItem to="/billing" icon={Receipt} label="Billing & Kasir" active={location.pathname === '/billing'} permission="billing" userRole={userData.role} />
+            {!isSidebarCollapsed && <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest mb-2 px-4">Transaksi</p>}
+            <SidebarItem to="/records" icon={ClipboardList} label="Pelayanan" active={location.pathname.startsWith('/records')} permission="records" userRole={userData.role} isCollapsed={isSidebarCollapsed} />
+            <SidebarItem to="/informed-consent" icon={FileCheck} label="Informed Consent" active={location.pathname === '/informed-consent'} permission="informed-consent" userRole={userData.role} isCollapsed={isSidebarCollapsed} />
+            <SidebarItem to="/billing" icon={Receipt} label="Billing & Kasir" active={location.pathname === '/billing'} permission="billing" userRole={userData.role} isCollapsed={isSidebarCollapsed} />
             
             <div className="py-2"></div>
-            <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest mb-2 px-4">Pelaporan</p>
-            <SidebarItem to="/reports" icon={BarChart3} label="Statistik & Laporan" active={location.pathname === '/reports'} permission="reports" userRole={userData.role} />
-            <SidebarItem to="/education" icon={Video} label="Materi Edukasi" active={location.pathname === '/education'} permission="education" userRole={userData.role} />
-            <SidebarItem to="/appointments" icon={Calendar} label="Jadwal Reservasi" active={location.pathname === '/appointments'} permission="appointments" userRole={userData.role} />
+            {!isSidebarCollapsed && <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest mb-2 px-4">Pelaporan</p>}
+            <SidebarItem to="/reports" icon={BarChart3} label="Statistik & Laporan" active={location.pathname === '/reports'} permission="reports" userRole={userData.role} isCollapsed={isSidebarCollapsed} />
+            <SidebarItem to="/education" icon={Video} label="Materi Edukasi" active={location.pathname === '/education'} permission="education" userRole={userData.role} isCollapsed={isSidebarCollapsed} />
+            <SidebarItem to="/appointments" icon={Calendar} label="Jadwal Reservasi" active={location.pathname === '/appointments'} permission="appointments" userRole={userData.role} isCollapsed={isSidebarCollapsed} />
           </nav>
 
           <div className="pt-4 border-t border-white/5 space-y-1">
-            <SidebarItem to="/settings" icon={Settings} label="Pengaturan" active={location.pathname === '/settings'} permission="settings" userRole={userData.role} />
-            <SidebarItem to="/security" icon={ShieldCheck} label="Keamanan" active={location.pathname === '/security'} permission="security" userRole={userData.role} />
+            <SidebarItem to="/settings" icon={Settings} label="Pengaturan" active={location.pathname === '/settings'} permission="settings" userRole={userData.role} isCollapsed={isSidebarCollapsed} />
+            <SidebarItem to="/security" icon={ShieldCheck} label="Keamanan" active={location.pathname === '/security'} permission="security" userRole={userData.role} isCollapsed={isSidebarCollapsed} />
           </div>
         </div>
       </aside>
