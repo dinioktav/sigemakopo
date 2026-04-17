@@ -683,8 +683,28 @@ const Layout = ({ children, userData, setUserData, onLogout }: { children: React
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const location = useLocation();
 
+  // Close sidebar on navigation for mobile
+  useEffect(() => {
+    if (window.innerWidth < 1024) {
+      setSidebarOpen(false);
+    }
+  }, [location]);
+
   return (
-    <div className="min-h-screen bg-[#f3f4f6] flex">
+    <div className="min-h-screen bg-[#f3f4f6] flex relative overflow-x-hidden">
+      {/* Mobile Backdrop */}
+      <AnimatePresence>
+        {isSidebarOpen && !isSidebarCollapsed && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSidebarOpen(false)}
+            className="fixed inset-0 bg-navy-dark/40 backdrop-blur-sm z-40 lg:hidden"
+          />
+        )}
+      </AnimatePresence>
+
       {/* Sidebar */}
       <aside className={cn(
         "fixed inset-y-0 left-0 z-50 bg-navy-dark border-r border-white/5 transition-all duration-300 transform lg:translate-x-0 lg:static lg:inset-0 shadow-xl flex flex-col",

@@ -34,6 +34,11 @@
   @apply bg-white/40 backdrop-blur-xl border border-white/40 shadow-2xl shadow-navy/5;
 }
 
+.custom-scrollbar {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
 .custom-scrollbar::-webkit-scrollbar {
   width: 4px;
 }
@@ -43,7 +48,14 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  @apply bg-navy/10 rounded-full hover:bg-navy/20 transition-colors;
+  @apply bg-white/10 rounded-full hover:bg-white/20 transition-colors;
+}
+
+/* Hide scrollbar on mobile but keep functionality */
+@media (max-width: 1024px) {
+  .custom-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 @media print {
