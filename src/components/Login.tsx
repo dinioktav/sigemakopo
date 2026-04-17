@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, RefreshCw, LogIn, UserPlus, ArrowLeft, Mail, Key, User } from 'lucide-react';
+import { ShieldCheck, RefreshCw, LogIn, UserPlus, ArrowLeft, Mail, Key } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { auth, googleProvider, db } from '../lib/firebase';
 import { 
@@ -7,8 +7,7 @@ import {
   createUserWithEmailAndPassword, 
   signInWithPopup, 
   sendPasswordResetEmail,
-  updateProfile,
-  signInAnonymously
+  updateProfile
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 
@@ -77,42 +76,6 @@ export const Login = ({ onLogin }: LoginProps) => {
       });
     } catch (err: any) {
       setError('Gagal masuk dengan Google: ' + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAnonymousLogin = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const result = await signInAnonymously(auth);
-      const userDoc = await getDoc(doc(db, 'users', result.user.uid));
-      let userRole = 'Pasien';
-      
-      if (userDoc.exists()) {
-        userRole = userDoc.data().role;
-      } else {
-        // Save default role for new anonymous users
-        await setDoc(doc(db, 'users', result.user.uid), {
-          fullName: 'Anonymous User',
-          role: userRole,
-          jenisTenaga: userRole,
-          email: 'anonymous@system',
-          isApproved: true,
-          updatedAt: new Date().toISOString()
-        });
-      }
-
-      onLogin({ 
-        role: userRole,
-        fullName: 'Anonymous User',
-        photoURL: '',
-        jenisTenaga: userDoc.exists() ? (userDoc.data().jenisTenaga || userRole) : userRole,
-        isApproved: true
-      });
-    } catch (err: any) {
-      setError('Gagal masuk secara anonim: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -412,39 +375,16 @@ export const Login = ({ onLogin }: LoginProps) => {
               {isRegistering ? 'Daftar Sekarang' : 'Masuk ke Sistem'}
             </button>
 
-            {isRegistering && (
+            {!isRegistering && (
               <button 
                 type="button"
-                onClick={handleAnonymousLogin}
+                onClick={handleGoogleLogin}
                 disabled={loading}
                 className="w-full py-5 bg-white text-navy border-2 border-navy/10 rounded-2xl font-black hover:bg-navy-50 transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-xs disabled:opacity-50"
               >
-                <User size={18} className="text-pink" />
-                Daftar Tanpa Akun (Anonim)
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
+                Masuk dengan Google
               </button>
-            )}
-
-            {!isRegistering && (
-              <div className="grid grid-cols-2 gap-3">
-                <button 
-                  type="button"
-                  onClick={handleGoogleLogin}
-                  disabled={loading}
-                  className="py-5 bg-white text-navy border-2 border-navy/10 rounded-2xl font-black hover:bg-navy-50 transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-[10px] disabled:opacity-50"
-                >
-                  <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-4 h-4" />
-                  Google
-                </button>
-                <button 
-                  type="button"
-                  onClick={handleAnonymousLogin}
-                  disabled={loading}
-                  className="py-5 bg-navy-50 text-navy border-2 border-navy/10 rounded-2xl font-black hover:bg-navy-100 transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-[10px] disabled:opacity-50"
-                >
-                  <User size={16} className="text-pink" />
-                  Anonim
-                </button>
-              </div>
             )}
           </div>
 
