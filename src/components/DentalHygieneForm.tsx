@@ -194,9 +194,9 @@ export const DentalHygieneForm = () => {
         { kebutuhan: '', penyebab: '', tandaGejala: '' }
       ],
       planning: {
-        goals: '',
-        interventions: '',
-        evaluativeStatement: '',
+        goals: [''],
+        interventions: [''],
+        evaluativeStatement: [''],
       },
       nextVisit: '',
       recommendations: '',
@@ -295,6 +295,49 @@ export const DentalHygieneForm = () => {
         diagnoses: prev.askesgilut.diagnoses.filter((_, i) => i !== index)
       }
     }));
+  };
+
+  const addPlanningItem = (field: 'goals' | 'interventions' | 'evaluativeStatement') => {
+    setFormData(prev => ({
+      ...prev,
+      askesgilut: {
+        ...prev.askesgilut,
+        planning: {
+          ...prev.askesgilut.planning,
+          [field]: [...(prev.askesgilut.planning[field] as string[]), '']
+        }
+      }
+    }));
+  };
+
+  const removePlanningItem = (field: 'goals' | 'interventions' | 'evaluativeStatement', index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      askesgilut: {
+        ...prev.askesgilut,
+        planning: {
+          ...prev.askesgilut.planning,
+          [field]: (prev.askesgilut.planning[field] as string[]).filter((_, i) => i !== index)
+        }
+      }
+    }));
+  };
+
+  const updatePlanningItem = (field: 'goals' | 'interventions' | 'evaluativeStatement', index: number, value: string) => {
+    setFormData(prev => {
+      const newList = [...(prev.askesgilut.planning[field] as string[])];
+      newList[index] = value;
+      return {
+        ...prev,
+        askesgilut: {
+          ...prev.askesgilut,
+          planning: {
+            ...prev.askesgilut.planning,
+            [field]: newList
+          }
+        }
+      };
+    });
   };
 
   useEffect(() => {
@@ -1344,29 +1387,109 @@ export const DentalHygieneForm = () => {
                   {/* Planning Table */}
                   <div className="bg-white rounded-3xl border border-navy/5 overflow-hidden shadow-sm">
                     <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-navy/5">
-                      <div className="p-6 space-y-3">
-                        <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest block">Tujuan Berpusat Pada Klien</label>
-                        <textarea 
-                          className="w-full p-4 bg-navy-50 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-xl text-sm min-h-[150px] transition-all font-medium"
-                          value={formData.askesgilut.planning.goals}
-                          onChange={e => setFormData({...formData, askesgilut: {...formData.askesgilut, planning: {...formData.askesgilut.planning, goals: e.target.value}}})}
-                        />
+                      {/* Goals Column */}
+                      <div className="p-6 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest block">Tujuan Berpusat Pada Klien</label>
+                          <button 
+                            type="button"
+                            onClick={() => addPlanningItem('goals')}
+                            className="p-1.5 bg-navy-50 text-navy hover:bg-navy hover:text-white rounded-xl transition-all"
+                          >
+                            <Plus size={14} />
+                          </button>
+                        </div>
+                        <div className="space-y-3">
+                          {(formData.askesgilut.planning.goals as string[]).map((goal, idx) => (
+                            <div key={idx} className="relative group">
+                              <textarea 
+                                className="w-full p-4 bg-navy-50 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-xl text-sm min-h-[120px] transition-all font-medium pr-10"
+                                value={goal}
+                                onChange={e => updatePlanningItem('goals', idx, e.target.value)}
+                                placeholder={`Tujuan ${idx + 1}...`}
+                              />
+                              {idx > 0 && (
+                                <button 
+                                  type="button"
+                                  onClick={() => removePlanningItem('goals', idx)}
+                                  className="absolute top-2 right-2 p-1 text-pink opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
+                                >
+                                  <X size={14} />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <div className="p-6 space-y-3">
-                        <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest block">Intervensi Askesgilut</label>
-                        <textarea 
-                          className="w-full p-4 bg-navy-50 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-xl text-sm min-h-[150px] transition-all font-medium"
-                          value={formData.askesgilut.planning.interventions}
-                          onChange={e => setFormData({...formData, askesgilut: {...formData.askesgilut, planning: {...formData.askesgilut.planning, interventions: e.target.value}}})}
-                        />
+
+                      {/* Interventions Column */}
+                      <div className="p-6 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest block">Intervensi Askesgilut</label>
+                          <button 
+                            type="button"
+                            onClick={() => addPlanningItem('interventions')}
+                            className="p-1.5 bg-navy-50 text-navy hover:bg-navy hover:text-white rounded-xl transition-all"
+                          >
+                            <Plus size={14} />
+                          </button>
+                        </div>
+                        <div className="space-y-3">
+                          {(formData.askesgilut.planning.interventions as string[]).map((intervention, idx) => (
+                            <div key={idx} className="relative group">
+                              <textarea 
+                                className="w-full p-4 bg-navy-50 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-xl text-sm min-h-[120px] transition-all font-medium pr-10"
+                                value={intervention}
+                                onChange={e => updatePlanningItem('interventions', idx, e.target.value)}
+                                placeholder={`Intervensi ${idx + 1}...`}
+                              />
+                              {idx > 0 && (
+                                <button 
+                                  type="button"
+                                  onClick={() => removePlanningItem('interventions', idx)}
+                                  className="absolute top-2 right-2 p-1 text-pink opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
+                                >
+                                  <X size={14} />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <div className="p-6 space-y-3">
-                        <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest block">Pernyataan Evaluativ</label>
-                        <textarea 
-                          className="w-full p-4 bg-navy-50 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-xl text-sm min-h-[150px] transition-all font-medium"
-                          value={formData.askesgilut.planning.evaluativeStatement}
-                          onChange={e => setFormData({...formData, askesgilut: {...formData.askesgilut, planning: {...formData.askesgilut.planning, evaluativeStatement: e.target.value}}})}
-                        />
+
+                      {/* Evaluative Statement Column */}
+                      <div className="p-6 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest block">Pernyataan Evaluativ</label>
+                          <button 
+                            type="button"
+                            onClick={() => addPlanningItem('evaluativeStatement')}
+                            className="p-1.5 bg-navy-50 text-navy hover:bg-navy hover:text-white rounded-xl transition-all"
+                          >
+                            <Plus size={14} />
+                          </button>
+                        </div>
+                        <div className="space-y-3">
+                          {(formData.askesgilut.planning.evaluativeStatement as string[]).map((statement, idx) => (
+                            <div key={idx} className="relative group">
+                              <textarea 
+                                className="w-full p-4 bg-navy-50 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-xl text-sm min-h-[120px] transition-all font-medium pr-10"
+                                value={statement}
+                                onChange={e => updatePlanningItem('evaluativeStatement', idx, e.target.value)}
+                                placeholder={`Evaluasi ${idx + 1}...`}
+                              />
+                              {idx > 0 && (
+                                <button 
+                                  type="button"
+                                  onClick={() => removePlanningItem('evaluativeStatement', idx)}
+                                  className="absolute top-2 right-2 p-1 text-pink opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
+                                >
+                                  <X size={14} />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
