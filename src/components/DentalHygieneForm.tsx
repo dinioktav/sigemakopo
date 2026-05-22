@@ -22,13 +22,16 @@ import {
   Printer,
   X,
   Users,
-  Calendar
+  Calendar,
+  History,
+  Eye,
+  Trash2
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { Odontogram } from './Odontogram';
 import SignaturePad from 'signature_pad';
 import { GoogleGenAI } from "@google/genai";
-import { collection, query, orderBy, onSnapshot, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, Timestamp, where, limit, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { ASKESGILUT_DIAGNOSES } from '../constants/askesgilut';
 
@@ -58,11 +61,15 @@ export const DentalHygieneForm = () => {
   
   const [patients, setPatients] = useState<any[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string>('');
+  const [patientRecords, setPatientRecords] = useState<any[]>([]);
+  const [currentRecordId, setCurrentRecordId] = useState<string | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
   
   const [formData, setFormData] = useState({
     patientId: '',
     visitNumber: 1,
     visitDate: new Date().toISOString().split('T')[0],
+    status: 'draft' as 'draft' | 'final',
     anamnesis: {
       medicalHistory: {
         isHealthy: true,
@@ -245,8 +252,51 @@ export const DentalHygieneForm = () => {
   useEffect(() => {
     if (selectedPatientId) {
       setFormData(prev => ({ ...prev, patientId: selectedPatientId }));
+      
+      // Fetch records for the selected patient
+      const q = query(
+        collection(db, 'dental_records'), 
+        where('patientId', '==', selectedPatientId),
+        orderBy('createdAt', 'desc')
+      );
+      
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const records = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setPatientRecords(records);
+        
+        // Auto-load most recent draft if we don't have a currentRecordId
+        if (!currentRecordId) {
+          const draft = records.find((r: any) => r.status === 'draft');
+          if (draft) {
+            // Load draft data
+            setFormData(draft as any);
+            setCurrentRecordId(draft.id);
+          } else {
+            // Reset form for new visit if no draft
+            // Keep patientId and visitDate
+            setFormData(prev => ({
+              ...prev,
+              patientId: selectedPatientId,
+              visitNumber: records.length + 1,
+              status: 'draft'
+            }));
+            setCurrentRecordId(null);
+          }
+        }
+      });
+      
+      return () => unsubscribe();
     }
   }, [selectedPatientId]);
+
+  const loadRecord = (record: any) => {
+    setFormData(record);
+    setCurrentRecordId(record.id);
+    setShowHistory(false);
+  };
 
   const handleSaveProgress = async () => {
     if (!selectedPatientId) {
@@ -259,15 +309,24 @@ export const DentalHygieneForm = () => {
       const recordData = {
         ...formData,
         patientId: selectedPatientId,
+        status: 'draft',
         updatedAt: Timestamp.now(),
       };
 
-      // We use addDoc for now, but ideally we should update if it already exists for this visit
-      // For simplicity and following user request "klik simpan pada setiap bagian", we'll just add/save
-      await addDoc(collection(db, 'dental_records'), recordData);
+      if (currentRecordId) {
+        await updateDoc(doc(db, 'dental_records', currentRecordId), recordData);
+      } else {
+        const newDoc = await addDoc(collection(db, 'dental_records'), {
+          ...recordData,
+          createdAt: Timestamp.now(),
+        });
+        setCurrentRecordId(newDoc.id);
+      }
+      
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error) {
+      console.error("Save Progress Error:", error);
       handleFirestoreError(error, OperationType.WRITE, 'dental_records');
     } finally {
       setIsSaving(false);
@@ -432,22 +491,35 @@ export const DentalHygieneForm = () => {
       return;
     }
 
+    if (!confirm("Apakah Anda yakin ingin melakukan finalisasi rekam medis? Data yang sudah difinalisasi akan masuk ke riwayat permanen.")) {
+      return;
+    }
+
     setIsSaving(true);
     try {
       const recordData = {
         ...formData,
         patientId: selectedPatientId,
-        createdAt: Timestamp.now(),
+        status: 'final' as const,
         updatedAt: Timestamp.now(),
       };
 
-      await addDoc(collection(db, 'dental_records'), recordData);
+      if (currentRecordId) {
+        await updateDoc(doc(db, 'dental_records', currentRecordId), recordData);
+      } else {
+        const newDoc = await addDoc(collection(db, 'dental_records'), {
+          ...recordData,
+          createdAt: Timestamp.now(),
+        });
+        setCurrentRecordId(newDoc.id);
+      }
+      
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
-      // Optionally redirect or reset form
+      alert("Rekam medis berhasil difinalisasi!");
     } catch (error) {
-      console.error("Error saving dental record:", error);
-      alert("Gagal menyimpan data. Silakan coba lagi.");
+      console.error("Error finalizing dental record:", error);
+      alert("Gagal memproses finalisasi. Silakan coba lagi.");
     } finally {
       setIsSaving(false);
     }
@@ -573,6 +645,14 @@ export const DentalHygieneForm = () => {
         </div>
         <div className="flex items-center gap-4">
           <button 
+            onClick={() => setShowHistory(true)}
+            disabled={!selectedPatientId}
+            className="px-8 py-4 bg-navy-50 border-2 border-navy/5 rounded-2xl text-xs font-black text-navy/60 hover:border-navy hover:text-navy transition-all uppercase tracking-widest shadow-sm flex items-center gap-2 disabled:opacity-30"
+          >
+            <History size={16} />
+            Riwayat
+          </button>
+          <button 
             onClick={handleSaveProgress}
             disabled={isSaving}
             className="px-8 py-4 bg-white border-2 border-navy/5 rounded-2xl text-xs font-black text-navy/40 hover:border-pink hover:text-pink transition-all uppercase tracking-widest shadow-sm flex items-center gap-2"
@@ -674,6 +754,128 @@ export const DentalHygieneForm = () => {
       {/* Form Content */}
       <div className="glass-card rounded-3xl min-h-[500px] flex flex-col overflow-hidden">
         <div className="flex-1 p-8">
+          <AnimatePresence>
+            {showHistory && (
+              <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 bg-navy/60 backdrop-blur-sm" 
+                  onClick={() => setShowHistory(false)}
+                />
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                  className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[85vh]"
+                >
+                  <header className="p-8 bg-navy text-white flex items-center justify-between">
+                    <div>
+                      <h2 className="text-2xl font-black uppercase tracking-tighter">Riwayat Rekam Medis</h2>
+                      <p className="text-gold text-[10px] font-black uppercase tracking-[0.3em] mt-1">
+                        {patients.find(p => p.id === selectedPatientId)?.name || 'Pasien'}
+                      </p>
+                    </div>
+                    <button onClick={() => setShowHistory(false)} className="p-2 hover:bg-white/10 rounded-xl transition-all">
+                      <X size={24} />
+                    </button>
+                  </header>
+
+                  <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                    {patientRecords.length === 0 ? (
+                      <div className="text-center py-20">
+                        <History size={48} className="text-navy/10 mx-auto mb-4" />
+                        <p className="text-sm font-bold text-navy/30 uppercase tracking-widest">Belum ada riwayat pemeriksaan</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {patientRecords.map((record) => (
+                          <div 
+                            key={record.id}
+                            className={cn(
+                              "p-6 rounded-[2rem] border-2 transition-all group flex items-center justify-between gap-6",
+                              record.status === 'final' ? "bg-white border-navy/5 hover:border-navy" : "bg-pink-soft/20 border-pink/10 hover:border-pink"
+                            )}
+                          >
+                            <div className="flex items-center gap-6">
+                              <div className={cn(
+                                "w-16 h-16 rounded-2xl flex flex-col items-center justify-center border transition-colors",
+                                record.status === 'final' ? "bg-navy-50 border-navy/5 group-hover:bg-navy group-hover:text-gold" : "bg-white border-pink/20"
+                              )}>
+                                <span className="text-lg font-black leading-none">
+                                  {new Date(record.visitDate).getDate()}
+                                </span>
+                                <span className={cn(
+                                  "text-[8px] font-black uppercase tracking-widest mt-1",
+                                  record.status === 'final' ? "opacity-40" : "text-pink"
+                                )}>
+                                  {new Date(record.visitDate).toLocaleString('id-ID', { month: 'short' })}
+                                </span>
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-3 mb-1">
+                                  <h4 className="text-sm font-black text-navy uppercase tracking-tight">Kunjungan #{record.visitNumber}</h4>
+                                  <span className={cn(
+                                    "text-[8px] font-black px-2 py-1 rounded-full uppercase tracking-widest",
+                                    record.status === 'final' ? "bg-green-100 text-green-700" : "bg-pink-soft text-pink border border-pink/10"
+                                  )}>
+                                    {record.status === 'final' ? 'FINAL' : 'DRAFT'}
+                                  </span>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                  {record.askesgilut?.diagnoses?.map((d: any, i: number) => d.kebutuhan && (
+                                    <span key={i} className="text-[10px] font-bold text-navy/40">
+                                      {i > 0 && "• "} {d.kebutuhan}
+                                    </span>
+                                  ))}
+                                  {(!record.askesgilut?.diagnoses || record.askesgilut.diagnoses.length === 0) && (
+                                    <span className="text-[10px] italic text-navy/20">Tidak ada diagnosis khusus</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                              <button 
+                                onClick={() => loadRecord(record)}
+                                className="p-3 bg-navy-50 text-navy hover:bg-navy hover:text-white rounded-xl transition-all"
+                                title="Lihat/Edit"
+                              >
+                                <Eye size={18} />
+                              </button>
+                              {record.status === 'draft' && (
+                                <button 
+                                  onClick={async () => {
+                                    if(confirm('Hapus draft ini?')) {
+                                      await deleteDoc(doc(db, 'dental_records', record.id));
+                                      if(currentRecordId === record.id) {
+                                        setCurrentRecordId(null);
+                                        // Reset form?
+                                      }
+                                    }
+                                  }}
+                                  className="p-3 bg-pink-soft text-pink hover:bg-pink hover:text-white rounded-xl transition-all"
+                                  title="Hapus Draft"
+                                >
+                                  <Trash2 size={18} />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <footer className="p-8 bg-navy-50 border-t border-navy/5 text-center">
+                    <p className="text-[10px] font-black text-navy/20 uppercase tracking-[0.3em]">Klik ikon mata untuk memuat data ke formulir</p>
+                  </footer>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
+
           <AnimatePresence mode="wait">
             <motion.div
               key={currentStep}

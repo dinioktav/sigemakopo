@@ -237,128 +237,308 @@ const ProfilePage = ({ userData, setUserData }: { userData: any, setUserData: an
   );
 };
 
-const Dashboard = () => (
-  <div className="p-8 space-y-8">
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      {[
-        { label: 'Total Pasien', value: '0', icon: Users, color: 'bg-primary' },
-        { label: 'Kunjungan Hari Ini', value: '0', icon: Calendar, color: 'bg-primary' },
-        { label: 'Billing Pending', value: 'Rp 0', icon: Receipt, color: 'bg-danger' },
-        { label: 'Antrean Aktif', value: '0', icon: Activity, color: 'bg-success' },
-      ].map((stat, i) => (
-        <div key={i} className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-center gap-5 hover:border-primary/30 transition-all group">
-          <div className={cn("w-12 h-12 rounded-lg flex items-center justify-center text-white shadow-md transition-transform group-hover:scale-110", stat.color)}>
-            <stat.icon size={22} />
-          </div>
-          <div>
-            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-0.5">{stat.label}</p>
-            <p className="text-2xl font-bold text-gray-900 tracking-tight">{stat.value}</p>
-          </div>
-        </div>
-      ))}
-    </div>
+const Dashboard = () => {
+  const [stats, setStats] = useState({
+    totalPatients: 0,
+    visitsToday: 0,
+    pendingBilling: 0,
+    activeQueue: 0
+  });
+  const [chartData, setChartData] = useState<any[]>([]);
+  const [pieData, setPieData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div className="lg:col-span-2 bg-white p-8 rounded-xl border border-gray-200 shadow-sm">
-        <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-50">
-          <h3 className="font-bold text-gray-700 uppercase tracking-widest text-[11px]">Tren Pelayanan & Kesehatan Gigi</h3>
-          <div className="flex gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-primary/20 border-2 border-primary"></div>
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">DMF-T</span>
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+
+    // Patients Stats
+    const unsubPatients = onSnapshot(collection(db, 'patients'), (snapshot) => {
+      const total = snapshot.size;
+      setStats(prev => ({ ...prev, totalPatients: total }));
+    });
+
+    // Records Stats
+    const unsubRecords = onSnapshot(collection(db, 'dental_records'), (snapshot) => {
+      const records = snapshot.docs.map(doc => doc.data());
+      
+      const visitsToday = records.filter(r => r.visitDate === today).length;
+      
+      const pendingSum = records.reduce((sum, r) => {
+        if (r.status === 'draft') return sum + (r.billing?.total || 0);
+        return sum;
+      }, 0);
+
+      setStats(prev => ({ 
+        ...prev, 
+        visitsToday, 
+        pendingBilling: pendingSum,
+        activeQueue: records.filter(r => r.status === 'draft').length
+      }));
+
+      // Chart Data (Last 6 Months)
+      const last6Months = Array.from({ length: 6 }, (_, i) => {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        return {
+          month: d.getMonth() + 1,
+          year: d.getFullYear(),
+          name: d.toLocaleString('id-ID', { month: 'short' }),
+          dmft: 0,
+          ohis: 0,
+          count: 0
+        };
+      }).reverse();
+
+      records.forEach(r => {
+        const date = r.createdAt?.toDate ? r.createdAt.toDate() : new Date(r.visitDate);
+        const month = date.getMonth() + 1;
+        const year = date.getFullYear();
+        
+        const monthData = last6Months.find(m => m.month === month && m.year === year);
+        if (monthData) {
+          monthData.dmft += r.indices?.dmft?.total || 0;
+          monthData.ohis += r.indices?.ohis?.total || 0;
+          monthData.count++;
+        }
+      });
+
+      setChartData(last6Months.map(m => ({
+        ...m,
+        dmft: m.count > 0 ? parseFloat((m.dmft / m.count).toFixed(2)) : 0,
+        ohis: m.count > 0 ? parseFloat((m.ohis / m.count).toFixed(2)) : 0
+      })));
+
+      // Pie Data (Diagnosis Categories)
+      const categories: Record<string, number> = {};
+      let totalItems = 0;
+      records.forEach(r => {
+        r.askesgilut?.diagnoses?.forEach((d: any) => {
+          if (d.kebutuhan) {
+            categories[d.kebutuhan] = (categories[d.kebutuhan] || 0) + 1;
+            totalItems++;
+          }
+        });
+      });
+
+      const pie = Object.entries(categories)
+        .map(([name, value], i) => ({
+          name,
+          value: parseFloat(((value / totalItems) * 100).toFixed(1)),
+          color: ['#db2777', '#f472b6', '#pink', '#gold', '#navy'][i % 5]
+        }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 5);
+
+      setPieData(pie);
+      setLoading(false);
+    });
+
+    return () => {
+      unsubPatients();
+      unsubRecords();
+    };
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="p-8 flex items-center justify-center min-h-[400px]">
+        <RefreshCw className="animate-spin text-pink" size={48} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-8 space-y-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[
+          { label: 'Total Pasien', value: stats.totalPatients.toString(), icon: Users, color: 'bg-primary' },
+          { label: 'Kunjungan Hari Ini', value: stats.visitsToday.toString(), icon: Calendar, color: 'bg-primary' },
+          { label: 'Billing Draft/Pending', value: `Rp ${stats.pendingBilling.toLocaleString()}`, icon: Receipt, color: 'bg-danger' },
+          { label: 'Pasien Dalam Proses', value: stats.activeQueue.toString(), icon: Activity, color: 'bg-success' },
+        ].map((stat, i) => (
+          <div key={i} className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-center gap-5 hover:border-primary/30 transition-all group">
+            <div className={cn("w-12 h-12 rounded-lg flex items-center justify-center text-white shadow-md transition-transform group-hover:scale-110", stat.color)}>
+              <stat.icon size={22} />
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-primary/10 border-2 border-primary/50"></div>
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">OHI-S</span>
+            <div>
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-0.5">{stat.label}</p>
+              <p className="text-2xl font-bold text-gray-900 tracking-tight">{stat.value}</p>
             </div>
           </div>
-        </div>
-        <div className="h-72">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={MOCK_CHART_DATA}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 600 }} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 600 }} />
-              <Tooltip 
-                contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', padding: '12px' }}
-                cursor={{ fill: '#f8fafc' }}
-              />
-              <Bar dataKey="dmft" fill="#db2777" radius={[4, 4, 0, 0]} barSize={24} />
-              <Bar dataKey="ohis" fill="#f472b6" radius={[4, 4, 0, 0]} barSize={24} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        ))}
       </div>
-      <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm">
-        <h3 className="font-bold text-gray-700 uppercase tracking-widest text-[11px] mb-8 pb-4 border-b border-gray-50">Sebaran Kasus Pasien</h3>
-        <div className="h-56">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={MOCK_PIE_DATA}
-                innerRadius={65}
-                outerRadius={85}
-                paddingAngle={5}
-                dataKey="value"
-              >
-                {MOCK_PIE_DATA.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} stroke="#fff" strokeWidth={2} />
-                ))}
-              </Pie>
-              <Tooltip 
-                contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', padding: '12px' }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="mt-8 space-y-3">
-          {MOCK_PIE_DATA.map((item, i) => (
-            <div key={i} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: item.color }}></div>
-                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{item.name}</span>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 bg-white p-8 rounded-xl border border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-50">
+            <h3 className="font-bold text-gray-700 uppercase tracking-widest text-[11px]">Tren Indikator Kesehatan (Rerata)</h3>
+            <div className="flex gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-pink-soft border-2 border-pink"></div>
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">DMF-T</span>
               </div>
-              <span className="text-[10px] font-bold text-gray-900">{item.value}%</span>
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-pink-soft/50 border-2 border-pink/50"></div>
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">OHI-S</span>
+              </div>
             </div>
-          ))}
+          </div>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 600 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 600 }} />
+                <Tooltip 
+                  contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', padding: '12px' }}
+                  cursor={{ fill: '#f8fafc' }}
+                />
+                <Bar dataKey="dmft" fill="#db2777" radius={[4, 4, 0, 0]} barSize={24} />
+                <Bar dataKey="ohis" fill="#f472b6" radius={[4, 4, 0, 0]} barSize={24} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm">
+          <h3 className="font-bold text-gray-700 uppercase tracking-widest text-[11px] mb-8 pb-4 border-b border-gray-50">Sebaran Kebutuhan Pasien</h3>
+          {pieData.length > 0 ? (
+            <>
+              <div className="h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      innerRadius={65}
+                      outerRadius={85}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} stroke="#fff" strokeWidth={2} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', padding: '12px' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="mt-8 space-y-3">
+                {pieData.map((item, i) => (
+                  <div key={i} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: item.color }}></div>
+                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest overflow-hidden text-ellipsis whitespace-nowrap max-w-[150px]">{item.name}</span>
+                    </div>
+                    <span className="text-[10px] font-bold text-gray-900">{item.value}%</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="h-full flex items-center justify-center text-center opacity-30 italic text-xs py-20">
+              Belum ada data pelayanan untuk dianalisis
+            </div>
+          )}
         </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const Reports = () => {
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [records, setRecords] = useState<any[]>([]);
+  const [patients, setPatients] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   useEffect(() => {
-    const q = query(collection(db, 'dental_records'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+    const unsubRecords = onSnapshot(query(collection(db, 'dental_records'), orderBy('createdAt', 'desc')), (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setRecords(data);
+      
+      // Calculate Chart Data for Reports
+      const last6Months = Array.from({ length: 6 }, (_, i) => {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        return {
+          month: d.getMonth() + 1,
+          year: d.getFullYear(),
+          name: d.toLocaleString('id-ID', { month: 'short' }),
+          dmft: 0,
+          ohis: 0,
+          count: 0
+        };
+      }).reverse();
+
+      data.forEach((r: any) => {
+        const date = r.createdAt?.toDate ? r.createdAt.toDate() : new Date(r.visitDate);
+        const month = date.getMonth() + 1;
+        const year = date.getFullYear();
+        
+        const monthData = last6Months.find(m => m.month === month && m.year === year);
+        if (monthData) {
+          monthData.dmft += r.indices?.dmft?.total || 0;
+          monthData.ohis += r.indices?.ohis?.total || 0;
+          monthData.count++;
+        }
+      });
+
+      setChartData(last6Months.map(m => ({
+        ...m,
+        dmft: m.count > 0 ? parseFloat((m.dmft / m.count).toFixed(2)) : 0,
+        ohis: m.count > 0 ? parseFloat((m.ohis / m.count).toFixed(2)) : 0
+      })));
+    });
+
+    const unsubPatients = onSnapshot(collection(db, 'patients'), (snapshot) => {
+      setPatients(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
     });
-    return () => unsubscribe();
+
+    return () => {
+      unsubRecords();
+      unsubPatients();
+    };
   }, []);
+
+  const formatAssessment = (r: any) => {
+    const lines = [];
+    if (r.anamnesis) {
+      lines.push(`[ANAMNESIS] Medis: ${r.anamnesis.medicalHistory?.isHealthy ? 'Sehat' : 'Ada Riwayat'}, Keluhan: ${r.anamnesis.anamnesis?.reason || '-'}`);
+    }
+    if (r.indices) {
+      lines.push(`[INDEKS] DMF-T: ${r.indices.dmft?.total || 0}, OHI-S: ${r.indices.ohis?.total || 0}`);
+    }
+    if (r.askesgilut?.diagnoses) {
+      const diag = r.askesgilut.diagnoses.map((d: any) => d.kebutuhan).filter(Boolean).join(', ');
+      lines.push(`[DIAGNOSIS] ${diag || '-'}`);
+    }
+    if (r.planning) {
+      lines.push(`[PERENCANAAN] Tujuan: ${r.planning.clientCenteredGoals || '-'}`);
+    }
+    return lines.join(' | ');
+  };
 
   const handleAIAnalysis = async () => {
     setIsAnalyzing(true);
     setAiAnalysis(null);
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+      
+      const dmftAvg = records.reduce((sum, r) => sum + (r.indices?.dmft?.total || 0), 0) / (records.length || 1);
+      const ohisAvg = records.reduce((sum, r) => sum + (r.indices?.ohis?.total || 0), 0) / (records.length || 1);
+      
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: `Analisis data kesehatan gigi berikut untuk populasi:
-        Data DMF-T: ${JSON.stringify(MOCK_CHART_DATA.map(d => ({ bulan: d.name, dmft: d.dmft })))}
-        Data OHI-S: ${JSON.stringify(MOCK_CHART_DATA.map(d => ({ bulan: d.name, ohis: d.ohis })))}
-        Prevalensi Penyakit: ${JSON.stringify(MOCK_PIE_DATA)}
+        Jumlah Pasien: ${records.length}
+        Rata-rata DMF-T: ${dmftAvg.toFixed(2)}
+        Rata-rata OHI-S: ${ohisAvg.toFixed(2)}
         
         Berikan ringkasan eksekutif, tren kesehatan, dan rekomendasi tindakan preventif dalam format markdown yang profesional dan mudah dibaca.`,
       });
@@ -372,32 +552,39 @@ const Reports = () => {
   };
 
   const exportPDF = () => {
-    const doc = new jsPDF();
+    const doc = new jsPDF('l', 'mm', 'a4');
     const filtered = records.filter(r => {
       const date = r.createdAt?.toDate ? r.createdAt.toDate() : new Date(r.visitDate);
       return (date.getMonth() + 1) === selectedMonth && date.getFullYear() === selectedYear;
     });
 
     doc.setFontSize(18);
-    doc.text('Laporan Bulanan Pelayanan Gigi', 14, 22);
+    doc.text('Laporan Bulanan Detail Pelayanan Gigi', 14, 22);
     doc.setFontSize(11);
-    doc.text(`Periode: ${selectedMonth}/${selectedYear}`, 14, 30);
-    doc.text(`SIGEMA KOPO - UPTD Puskesmas Kopo`, 14, 38);
+    doc.text(`Periode: ${selectedMonth}/${selectedYear} | SIGEMA KOPO`, 14, 30);
 
-    const tableData = filtered.map(r => [
-      r.visitDate,
-      r.patientId, // In real case, join with patient name
-      r.askesgilut?.diagnoses?.map((d: any) => d.kebutuhan).join(', ') || '-',
-      `Rp ${(r.billing?.total || 0).toLocaleString()}`
-    ]);
-
-    autoTable(doc, {
-      startY: 45,
-      head: [['Tanggal', 'ID Pasien', 'Layanan/Diagnosis', 'Billing']],
-      body: tableData,
+    const tableData = filtered.map((r, index) => {
+      const p = patients.find(pat => pat.id === r.patientId);
+      return [
+        index + 1,
+        p?.rmNumber || r.patientId,
+        r.visitDate,
+        p?.name || 'Anonim',
+        formatAssessment(r)
+      ];
     });
 
-    doc.save(`Laporan_Bulanan_${selectedMonth}_${selectedYear}.pdf`);
+    autoTable(doc, {
+      startY: 40,
+      head: [['No', 'No RM', 'Tanggal', 'Nama Pasien', 'Isi Seluruh Pengkajian']],
+      body: tableData,
+      styles: { fontSize: 8, cellPadding: 2 },
+      columnStyles: {
+        4: { cellWidth: 100 }
+      }
+    });
+
+    doc.save(`Laporan_Lengkap_${selectedMonth}_${selectedYear}.pdf`);
   };
 
   const exportExcel = () => {
@@ -406,18 +593,35 @@ const Reports = () => {
       return (date.getMonth() + 1) === selectedMonth && date.getFullYear() === selectedYear;
     });
 
-    const worksheet = XLSX.utils.json_to_sheet(filtered.map(r => ({
-      'Tanggal': r.visitDate,
-      'ID Pasien': r.patientId,
-      'Layanan': r.askesgilut?.diagnoses?.map((d: any) => d.kebutuhan).join(', ') || '-',
-      'Total Billing': r.billing?.total || 0,
-      'Status Bayar': r.billing?.status || 'Pending'
-    })));
+    const worksheet = XLSX.utils.json_to_sheet(filtered.map((r, index) => {
+      const p = patients.find(pat => pat.id === r.patientId);
+      return {
+        'No': index + 1,
+        'No RM': p?.rmNumber || r.patientId,
+        'Tanggal Berobat': r.visitDate,
+        'Nama Pasien': p?.name || 'Anonim',
+        'Riwayat Medis': r.anamnesis?.medicalHistory?.isHealthy ? 'Sehat' : 'Bermasalah',
+        'Keluhan Utama': r.anamnesis?.anamnesis?.reason || '-',
+        'Indeks DMF-T': r.indices?.dmft?.total || 0,
+        'Indeks OHI-S': r.indices?.ohis?.total || 0,
+        'Diagnosis': r.askesgilut?.diagnoses?.map((d: any) => d.kebutuhan).join(', ') || '-',
+        'Rencana Perawatan': r.planning?.clientCenteredGoals || '-',
+        'Total Billing': r.billing?.total || 0
+      };
+    }));
 
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Laporan');
-    XLSX.writeFile(workbook, `Laporan_Bulanan_${selectedMonth}_${selectedYear}.xlsx`);
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Resitasi');
+    XLSX.writeFile(workbook, `Laporan_Bulanan_Lengkap_${selectedMonth}_${selectedYear}.xlsx`);
   };
+
+  if (loading) {
+    return (
+      <div className="p-8 flex items-center justify-center min-h-[400px]">
+        <RefreshCw className="animate-spin text-pink" size={48} />
+      </div>
+    );
+  }
 
   return (
     <div className="p-8">
@@ -513,7 +717,7 @@ const Reports = () => {
           <h3 className="font-bold text-navy uppercase tracking-widest text-[11px] mb-10">Laporan Epidemiologi (WHO Standard)</h3>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={MOCK_CHART_DATA}>
+              <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 600 }} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 600 }} />
@@ -548,6 +752,60 @@ const Reports = () => {
             </motion.div>
           )}
         </AnimatePresence>
+      </div>
+
+      {/* Preview Table */}
+      <div className="bg-white p-10 rounded-[3rem] border border-navy/5 shadow-xl">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h3 className="text-xl font-black text-navy uppercase tracking-tight">Preview Data Kunjungan</h3>
+            <p className="text-[10px] font-bold text-navy/30 uppercase tracking-widest mt-1">Menampilkan data periode {selectedMonth}/{selectedYear}</p>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-navy text-white text-[10px] uppercase font-black tracking-widest">
+                <th className="px-6 py-4 rounded-tl-2xl">No</th>
+                <th className="px-6 py-4">No RM</th>
+                <th className="px-6 py-4">Tanggal</th>
+                <th className="px-6 py-4">Pasien</th>
+                <th className="px-6 py-4 rounded-tr-2xl">Ringkasan Pengkajian</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-navy/5">
+              {records.filter(r => {
+                const date = r.createdAt?.toDate ? r.createdAt.toDate() : new Date(r.visitDate);
+                return (date.getMonth() + 1) === selectedMonth && date.getFullYear() === selectedYear;
+              }).map((record, i) => {
+                const p = patients.find(pat => pat.id === record.patientId);
+                return (
+                  <tr key={record.id} className="hover:bg-navy-50/50 transition-colors">
+                    <td className="px-6 py-4 text-[10px] font-black text-navy/20">{i + 1}</td>
+                    <td className="px-6 py-4">
+                      <span className="text-[10px] font-black text-navy bg-navy-50 px-2 py-1 rounded-md">{p?.rmNumber || 'N/A'}</span>
+                    </td>
+                    <td className="px-6 py-4 text-xs font-bold text-navy/60">{record.visitDate}</td>
+                    <td className="px-6 py-4">
+                      <p className="text-xs font-black text-navy uppercase">{p?.name || 'Anonim'}</p>
+                    </td>
+                    <td className="px-6 py-4">
+                      <p className="text-[10px] font-medium text-navy/40 leading-relaxed max-w-md line-clamp-2">
+                        {formatAssessment(record)}
+                      </p>
+                    </td>
+                  </tr>
+                );
+              })}
+              {records.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="py-20 text-center opacity-30 italic text-xs">Belum ada data kunjungan</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
