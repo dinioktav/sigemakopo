@@ -883,12 +883,18 @@ export const DentalHygieneForm = () => {
                               </button>
                               {record.status === 'draft' && (
                                 <button 
-                                  onClick={async () => {
-                                    if(confirm('Hapus draft ini?')) {
-                                      await deleteDoc(doc(db, 'dental_records', record.id));
-                                      if(currentRecordId === record.id) {
-                                        setCurrentRecordId(null);
-                                        // Reset form?
+                                  onClick={async (e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    if(confirm('Apakah Anda yakin ingin menghapus draft rekam medis ini?')) {
+                                      try {
+                                        await deleteDoc(doc(db, 'dental_records', record.id));
+                                        if(currentRecordId === record.id) {
+                                          setCurrentRecordId(null);
+                                        }
+                                      } catch (error) {
+                                        console.error("Delete Error:", error);
+                                        alert('Gagal menghapus draft. Silakan coba lagi.');
                                       }
                                     }
                                   }}
