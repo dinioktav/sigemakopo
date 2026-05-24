@@ -335,20 +335,38 @@ export const DentalHygieneForm = () => {
     setShowHistory(false);
   };
 
+  const cleanData = (obj: any): any => {
+    if (Array.isArray(obj)) {
+      return obj.map(v => (v && typeof v === 'object' && !(v instanceof Timestamp)) ? cleanData(v) : v).filter(v => v !== undefined);
+    } else if (obj && typeof obj === 'object' && !(obj instanceof Timestamp)) {
+      return Object.fromEntries(
+        Object.entries(obj)
+          .map(([k, v]) => [k, (v && typeof v === 'object' && !(v instanceof Timestamp)) ? cleanData(v) : v])
+          .filter(([_, v]) => v !== undefined)
+      );
+    }
+    return obj;
+  };
+
   const handleSaveProgress = async () => {
     if (!selectedPatientId) {
       alert("Silakan pilih pasien terlebih dahulu.");
       return;
     }
 
+    if (!auth.currentUser) {
+      alert("Sesi berakhir. Silakan login kembali.");
+      return;
+    }
+
     setIsSaving(true);
     try {
-      const recordData = {
+      const recordData = cleanData({
         ...formData,
         patientId: selectedPatientId,
         status: 'draft',
         updatedAt: Timestamp.now(),
-      };
+      });
 
       if (currentRecordId) {
         await updateDoc(doc(db, 'dental_records', currentRecordId), recordData);
@@ -364,7 +382,7 @@ export const DentalHygieneForm = () => {
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error) {
       console.error("Save Progress Error:", error);
-      handleFirestoreError(error, OperationType.WRITE, 'dental_records');
+      alert("Gagal menyimpan draf. Periksa koneksi internet Anda.");
     } finally {
       setIsSaving(false);
     }
@@ -532,14 +550,25 @@ export const DentalHygieneForm = () => {
       return;
     }
 
+    if (!auth.currentUser) {
+      alert("Sesi Anda telah berakhir. Silakan login kembali untuk menyimpan data.");
+      return;
+    }
+
     setIsSaving(true);
     try {
-      const recordData = {
+      const recordData = cleanData({
         ...formData,
         patientId: selectedPatientId,
         status: 'final' as const,
         updatedAt: Timestamp.now(),
-      };
+      });
+
+      // Simple size check estimate (JSON string length is a rough proxy for MB)
+      const dataSize = JSON.stringify(recordData).length;
+      if (dataSize > 900000) { // ~900KB threshold for 1MB Firestore limit
+        throw new Error("Data terlalu besar (melebihi batas Firestore). Harap kurangi penggunaan tanda tangan atau keterangan yang terlalu panjang.");
+      }
 
       if (currentRecordId) {
         await updateDoc(doc(db, 'dental_records', currentRecordId), recordData);
@@ -554,9 +583,21 @@ export const DentalHygieneForm = () => {
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
       alert("Rekam medis berhasil difinalisasi!");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error finalizing dental record:", error);
-      alert("Gagal memproses finalisasi. Silakan coba lagi.");
+      let errorMsg = "Gagal memproses finalisasi. ";
+      
+      if (error.code === 'permission-denied') {
+        errorMsg += "Akses ditolak (Izin tidak cukup).";
+      } else if (error.code === 'resource-exhausted') {
+        errorMsg += "Data terlalu besar untuk disimpan.";
+      } else if (error.message) {
+        errorMsg += error.message;
+      } else {
+        errorMsg += "Silakan coba lagi.";
+      }
+      
+      alert(errorMsg);
     } finally {
       setIsSaving(false);
     }

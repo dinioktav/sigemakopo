@@ -34,7 +34,7 @@ import { cn } from '@/src/lib/utils';
 import { Login } from './components/Login';
 import { auth, db } from './lib/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc, collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, query, orderBy, onSnapshot, getDocs, deleteDoc, where } from 'firebase/firestore';
 import { GoogleGenAI } from "@google/genai";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -1183,8 +1183,27 @@ export default function App() {
               createdAt: new Date().toISOString()
             });
           }
+          
+          // Cleanup Novianto's duplicate records if admin
+          if (userRole === 'Super Admin') {
+            const cleanupNovianto = async () => {
+              const patientsQuery = query(collection(db, 'patients'), where('name', '==', 'Novianto'));
+              const patientsSnapshot = await getDocs(patientsQuery);
+              for (const patientDoc of patientsSnapshot.docs) {
+                const recordsQuery = query(collection(db, 'dental_records'), where('patientId', '==', patientDoc.id), orderBy('createdAt', 'desc'));
+                const recordsSnapshot = await getDocs(recordsQuery);
+                if (recordsSnapshot.size > 1) {
+                  const docsToDelete = recordsSnapshot.docs.slice(1);
+                  for (const d of docsToDelete) {
+                    await deleteDoc(doc(db, 'dental_records', d.id));
+                  }
+                }
+              }
+            };
+            cleanupNovianto();
+          }
         } catch (error) {
-          console.error("Error fetching user role:", error);
+          console.error("Error in Auth State Transition:", error);
         }
 
         setIsAuthenticated(true);
