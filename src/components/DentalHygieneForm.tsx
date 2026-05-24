@@ -32,7 +32,7 @@ import { Odontogram } from './Odontogram';
 import SignaturePad from 'signature_pad';
 import { GoogleGenAI } from "@google/genai";
 import { collection, query, orderBy, onSnapshot, addDoc, Timestamp, where, limit, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../lib/firebase';
+import { db, handleFirestoreError, OperationType, auth } from '../lib/firebase';
 import { ASKESGILUT_DIAGNOSES } from '../constants/askesgilut';
 
 const STEPS = [
@@ -233,11 +233,13 @@ export const DentalHygieneForm = () => {
   useEffect(() => {
     const q = query(collection(db, 'patients'), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const patientsData = snapshot.docs.map(doc => ({
+      const data = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
-      setPatients(patientsData);
+      // Ensure unique IDs
+      const uniqueData = Array.from(new Map(data.map(item => [item.id, item])).values());
+      setPatients(uniqueData);
       
       // Handle patientId from URL after patients are loaded
       if (patientIdParam) {
@@ -261,15 +263,17 @@ export const DentalHygieneForm = () => {
       );
       
       const unsubscribe = onSnapshot(q, (snapshot) => {
-        const records = snapshot.docs.map(doc => ({
+        const data = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
-        setPatientRecords(records);
+        // Ensure unique IDs
+        const uniqueData = Array.from(new Map(data.map(item => [item.id, item])).values());
+        setPatientRecords(uniqueData);
         
         // Auto-load most recent draft if we don't have a currentRecordId
         if (!currentRecordId) {
-          const draft = records.find((r: any) => r.status === 'draft');
+          const draft = uniqueData.find((r: any) => r.status === 'draft');
           if (draft) {
             // Load draft data with defaults
             const mergedDraft = {
@@ -291,7 +295,7 @@ export const DentalHygieneForm = () => {
             setFormData(prev => ({
               ...prev,
               patientId: selectedPatientId,
-              visitNumber: records.length + 1,
+              visitNumber: uniqueData.length + 1,
               status: 'draft'
             }));
             setCurrentRecordId(null);
@@ -519,13 +523,21 @@ export const DentalHygieneForm = () => {
   const generateAIIntervention = async () => {
     setIsGeneratingAI(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const selectedDiags = formData.askesgilut.diagnoses.map(d => d.kebutuhan).filter(k => k).join(', ');
+      const key = process.env.GEMINI_API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY;
+      if (!key) {
+        throw new Error("API Key Gemini tidak ditemukan. Harap hubungi administrator.");
+      }
+      const ai = new GoogleGenAI(key);
+      const selectedDiags = (formData.askesgilut?.diagnoses || []).map(d => d.kebutuhan).filter(k => k).join(', ');
       
+      if (!selectedDiags) {
+        throw new Error("Silakan pilih diagnosis terlebih dahulu.");
+      }
+
       const prompt = `Sebagai Terapis Gigi dan Mulut (TGM), buatkan rencana intervensi dental hygiene yang komprehensif untuk pasien dengan diagnosis: ${selectedDiags}. Berikan dalam poin-poin singkat dan praktis.`;
       
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-3.5-flash",
         contents: prompt,
       });
 
@@ -533,8 +545,9 @@ export const DentalHygieneForm = () => {
         ...prev,
         soapie: { ...prev.soapie, intervention: response.text || '' }
       }));
-    } catch (error) {
+    } catch (error: any) {
       console.error("AI Generation failed:", error);
+      alert(error.message || "Gagal menghasilkan saran AI.");
     } finally {
       setIsGeneratingAI(false);
     }
@@ -598,6 +611,27 @@ export const DentalHygieneForm = () => {
       }
       
       alert(errorMsg);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteRecord = async (recordId: string) => {
+    if (!confirm("Apakah Anda yakin ingin menghapus draf rekam medis ini? Data yang dihapus tidak dapat dikembalikan.")) {
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await deleteDoc(doc(db, 'dental_records', recordId));
+      if (currentRecordId === recordId) {
+        setCurrentRecordId(null);
+        // Form will be reset or previous draft loaded by the useEffect on patientRecords
+      }
+      alert("Draf berhasil dihapus.");
+    } catch (error) {
+      console.error("Delete Record Error:", error);
+      alert("Gagal menghapus draf. Silakan coba lagi.");
     } finally {
       setIsSaving(false);
     }
@@ -924,20 +958,10 @@ export const DentalHygieneForm = () => {
                               </button>
                               {record.status === 'draft' && (
                                 <button 
-                                  onClick={async (e) => {
+                                  onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    if(confirm('Apakah Anda yakin ingin menghapus draft rekam medis ini?')) {
-                                      try {
-                                        await deleteDoc(doc(db, 'dental_records', record.id));
-                                        if(currentRecordId === record.id) {
-                                          setCurrentRecordId(null);
-                                        }
-                                      } catch (error) {
-                                        console.error("Delete Error:", error);
-                                        alert('Gagal menghapus draft. Silakan coba lagi.');
-                                      }
-                                    }
+                                    handleDeleteRecord(record.id);
                                   }}
                                   className="p-3 bg-pink-soft text-pink hover:bg-pink hover:text-white rounded-xl transition-all"
                                   title="Hapus Draft"
@@ -1538,7 +1562,7 @@ export const DentalHygieneForm = () => {
                     <h3 className="text-xl font-black text-navy uppercase tracking-wider">Diagnosis, Perencanaan, Implementasi dan Evaluasi Askesgilut</h3>
                     <button 
                       onClick={generateAIIntervention}
-                      disabled={isGeneratingAI || formData.askesgilut.diagnoses.every(d => !d.kebutuhan)}
+                      disabled={isGeneratingAI || (formData.askesgilut?.diagnoses || []).every(d => !d.kebutuhan)}
                       className="flex items-center gap-2 px-6 py-3 bg-navy text-pink rounded-xl text-xs font-black hover:bg-navy-light disabled:opacity-50 transition-all shadow-xl shadow-navy/10 uppercase tracking-widest"
                     >
                       {isGeneratingAI ? <RefreshCw className="animate-spin" size={18} /> : <Sparkles size={18} />}
@@ -1617,9 +1641,12 @@ export const DentalHygieneForm = () => {
                                 className="w-full p-4 bg-white border-transparent focus:border-pink focus:ring-0 rounded-xl text-sm transition-all font-medium appearance-none"
                                 value={diag.kebutuhan}
                                 onChange={e => {
-                                  const newDiags = [...formData.askesgilut.diagnoses];
-                                  newDiags[index].kebutuhan = e.target.value;
-                                  setFormData({...formData, askesgilut: {...formData.askesgilut, diagnoses: newDiags}});
+                                  const diags = formData.askesgilut?.diagnoses || [];
+                                  const newDiags = [...diags];
+                                  if (newDiags[index]) {
+                                    newDiags[index].kebutuhan = e.target.value;
+                                    setFormData({...formData, askesgilut: {...(formData.askesgilut || DEFAULT_ASKESGILUT), diagnoses: newDiags}});
+                                  }
                                 }}
                               >
                                 <option value="">Pilih Kebutuhan...</option>
@@ -1633,9 +1660,12 @@ export const DentalHygieneForm = () => {
                                   className="w-full p-4 mt-2 bg-white border-transparent focus:border-pink focus:ring-0 rounded-xl text-sm min-h-[80px] transition-all font-medium"
                                   placeholder="Tulis diagnosa lainnya..."
                                   onChange={e => {
-                                    const newDiags = [...formData.askesgilut.diagnoses];
-                                    newDiags[index].kebutuhan = e.target.value;
-                                    setFormData({...formData, askesgilut: {...formData.askesgilut, diagnoses: newDiags}});
+                                    const diags = formData.askesgilut?.diagnoses || [];
+                                    const newDiags = [...diags];
+                                    if (newDiags[index]) {
+                                      newDiags[index].kebutuhan = e.target.value;
+                                      setFormData({...formData, askesgilut: {...(formData.askesgilut || DEFAULT_ASKESGILUT), diagnoses: newDiags}});
+                                    }
                                   }}
                                 />
                               )}
@@ -1646,9 +1676,12 @@ export const DentalHygieneForm = () => {
                                 className="w-full p-4 bg-white border-transparent focus:border-pink focus:ring-0 rounded-xl text-sm min-h-[100px] transition-all font-medium"
                                 value={diag.penyebab}
                                 onChange={e => {
-                                  const newDiags = [...formData.askesgilut.diagnoses];
-                                  newDiags[index].penyebab = e.target.value;
-                                  setFormData({...formData, askesgilut: {...formData.askesgilut, diagnoses: newDiags}});
+                                  const diags = formData.askesgilut?.diagnoses || [];
+                                  const newDiags = [...diags];
+                                  if (newDiags[index]) {
+                                    newDiags[index].penyebab = e.target.value;
+                                    setFormData({...formData, askesgilut: {...(formData.askesgilut || DEFAULT_ASKESGILUT), diagnoses: newDiags}});
+                                  }
                                 }}
                               />
                             </div>
@@ -1658,9 +1691,12 @@ export const DentalHygieneForm = () => {
                                 className="w-full p-4 bg-white border-transparent focus:border-pink focus:ring-0 rounded-xl text-sm min-h-[100px] transition-all font-medium"
                                 value={diag.tandaGejala}
                                 onChange={e => {
-                                  const newDiags = [...formData.askesgilut.diagnoses];
-                                  newDiags[index].tandaGejala = e.target.value;
-                                  setFormData({...formData, askesgilut: {...formData.askesgilut, diagnoses: newDiags}});
+                                  const diags = formData.askesgilut?.diagnoses || [];
+                                  const newDiags = [...diags];
+                                  if (newDiags[index]) {
+                                    newDiags[index].tandaGejala = e.target.value;
+                                    setFormData({...formData, askesgilut: {...(formData.askesgilut || DEFAULT_ASKESGILUT), diagnoses: newDiags}});
+                                  }
                                 }}
                               />
                             </div>
@@ -1788,8 +1824,8 @@ export const DentalHygieneForm = () => {
                         type="text"
                         className="w-full px-6 py-4 bg-white border-2 border-navy/5 focus:border-pink focus:ring-0 rounded-2xl text-sm font-bold"
                         placeholder="Contoh: 6 bulan lagi..."
-                        value={formData.askesgilut.nextVisit}
-                        onChange={e => setFormData({...formData, askesgilut: {...formData.askesgilut, nextVisit: e.target.value}})}
+                        value={formData.askesgilut?.nextVisit || ''}
+                        onChange={e => setFormData({...formData, askesgilut: {...(formData.askesgilut || DEFAULT_ASKESGILUT), nextVisit: e.target.value}})}
                       />
                     </div>
                     <div className="space-y-2">
@@ -1797,8 +1833,8 @@ export const DentalHygieneForm = () => {
                       <input 
                         type="text"
                         className="w-full px-6 py-4 bg-white border-2 border-navy/5 focus:border-pink focus:ring-0 rounded-2xl text-sm font-bold"
-                        value={formData.askesgilut.recommendations}
-                        onChange={e => setFormData({...formData, askesgilut: {...formData.askesgilut, recommendations: e.target.value}})}
+                        value={formData.askesgilut?.recommendations || ''}
+                        onChange={e => setFormData({...formData, askesgilut: {...(formData.askesgilut || DEFAULT_ASKESGILUT), recommendations: e.target.value}})}
                       />
                     </div>
                   </div>
@@ -1944,7 +1980,16 @@ export const DentalHygieneForm = () => {
                         </tfoot>
                       </table>
                     </div>
-                    <div className="mt-10 flex flex-col md:flex-row justify-end gap-4">
+                    <div className="mt-10 flex flex-wrap justify-end gap-4">
+                      {currentRecordId && formData.status === 'draft' && (
+                        <button 
+                          onClick={() => handleDeleteRecord(currentRecordId)}
+                          disabled={isSaving}
+                          className="flex items-center justify-center gap-3 px-8 py-4 bg-pink-soft text-pink hover:bg-pink hover:text-white rounded-2xl font-black transition-all shadow-sm uppercase tracking-widest text-xs border border-pink/10 disabled:opacity-50"
+                        >
+                          <Trash2 size={20} /> Hapus Draf
+                        </button>
+                      )}
                       <button 
                         onClick={handlePrint}
                         className="flex items-center justify-center gap-3 px-8 py-4 bg-white text-navy border-2 border-navy/5 hover:border-pink hover:text-pink rounded-2xl font-black transition-all shadow-sm uppercase tracking-widest text-xs"

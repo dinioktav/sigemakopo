@@ -459,7 +459,9 @@ const Reports = () => {
   useEffect(() => {
     const unsubRecords = onSnapshot(query(collection(db, 'dental_records'), orderBy('createdAt', 'desc')), (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setRecords(data);
+      // Ensure unique IDs
+      const uniqueData = Array.from(new Map(data.map(item => [item.id, item])).values());
+      setRecords(uniqueData);
       
       // Calculate Chart Data for Reports
       const last6Months = Array.from({ length: 6 }, (_, i) => {
@@ -475,7 +477,7 @@ const Reports = () => {
         };
       }).reverse();
 
-      data.forEach((r: any) => {
+      uniqueData.forEach((r: any) => {
         const date = r.createdAt?.toDate ? r.createdAt.toDate() : new Date(r.visitDate);
         const month = date.getMonth() + 1;
         const year = date.getFullYear();
@@ -496,7 +498,9 @@ const Reports = () => {
     });
 
     const unsubPatients = onSnapshot(collection(db, 'patients'), (snapshot) => {
-      setPatients(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const uniqueData = Array.from(new Map(data.map(item => [item.id, item])).values());
+      setPatients(uniqueData);
       setLoading(false);
     });
 
@@ -1184,20 +1188,21 @@ export default function App() {
             });
           }
           
-          // Cleanup Novianto's duplicate records if admin
+          // Cleanup Novianto's data if admin (empty them)
           if (userRole === 'Super Admin') {
             const cleanupNovianto = async () => {
+              // Delete Patients named Novianto
               const patientsQuery = query(collection(db, 'patients'), where('name', '==', 'Novianto'));
               const patientsSnapshot = await getDocs(patientsQuery);
               for (const patientDoc of patientsSnapshot.docs) {
-                const recordsQuery = query(collection(db, 'dental_records'), where('patientId', '==', patientDoc.id), orderBy('createdAt', 'desc'));
+                // Delete all records for this patient
+                const recordsQuery = query(collection(db, 'dental_records'), where('patientId', '==', patientDoc.id));
                 const recordsSnapshot = await getDocs(recordsQuery);
-                if (recordsSnapshot.size > 1) {
-                  const docsToDelete = recordsSnapshot.docs.slice(1);
-                  for (const d of docsToDelete) {
-                    await deleteDoc(doc(db, 'dental_records', d.id));
-                  }
+                for (const d of recordsSnapshot.docs) {
+                  await deleteDoc(doc(db, 'dental_records', d.id));
                 }
+                // Delete the patient themselves
+                await deleteDoc(doc(db, 'patients', patientDoc.id));
               }
             };
             cleanupNovianto();

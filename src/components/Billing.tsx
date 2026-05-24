@@ -9,10 +9,11 @@ import {
   Clock, 
   MoreVertical,
   Plus,
-  RefreshCw
+  RefreshCw,
+  Trash2
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
-import { collection, query, orderBy, onSnapshot, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 
 export const Billing = () => {
@@ -59,6 +60,17 @@ export const Billing = () => {
       });
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'dental_records');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Apakah Anda yakin ingin menghapus draf rekam medis ini? Data akan hilang secara permanen.")) {
+      return;
+    }
+    try {
+      await deleteDoc(doc(db, 'dental_records', id));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, 'dental_records');
     }
   };
 
@@ -172,6 +184,15 @@ export const Billing = () => {
                         <button className="p-2 text-navy/20 hover:text-navy hover:bg-navy-50 rounded-xl transition-all" title="Download Data">
                           <Download size={18} />
                         </button>
+                        {bill.status === 'draft' && (
+                          <button 
+                            onClick={() => handleDelete(bill.id)}
+                            className="p-2 text-navy/20 hover:text-pink hover:bg-pink-soft rounded-xl transition-all" 
+                            title="Hapus Draft"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

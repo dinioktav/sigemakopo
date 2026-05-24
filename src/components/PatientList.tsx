@@ -120,11 +120,13 @@ export const PatientList = () => {
   useEffect(() => {
     const q = query(collection(db, 'patients'), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const patientData = snapshot.docs.map(doc => ({
+      const data = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
-      setPatients(patientData);
+      // Ensure unique IDs
+      const uniqueData = Array.from(new Map(data.map(item => [item.id, item])).values());
+      setPatients(uniqueData);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'patients');
     });
