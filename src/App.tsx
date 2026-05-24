@@ -509,7 +509,7 @@ const Reports = () => {
   const formatAssessment = (r: any) => {
     const lines = [];
     if (r.anamnesis) {
-      lines.push(`[ANAMNESIS] Medis: ${r.anamnesis.medicalHistory?.isHealthy ? 'Sehat' : 'Ada Riwayat'}, Keluhan: ${r.anamnesis.anamnesis?.reason || '-'}`);
+      lines.push(`[ANAMNESIS] Medis: ${r.anamnesis.medicalHistory?.isHealthy ? 'Sehat' : 'Ada Riwayat'}, Keluhan: ${r.anamnesis.dentalHistory?.reason || '-'}`);
     }
     if (r.indices) {
       lines.push(`[INDEKS] DMF-T: ${r.indices.dmft?.total || 0}, OHI-S: ${r.indices.ohis?.total || 0}`);
@@ -518,8 +518,8 @@ const Reports = () => {
       const diag = r.askesgilut.diagnoses.map((d: any) => d.kebutuhan).filter(Boolean).join(', ');
       lines.push(`[DIAGNOSIS] ${diag || '-'}`);
     }
-    if (r.planning) {
-      lines.push(`[PERENCANAAN] Tujuan: ${r.planning.clientCenteredGoals || '-'}`);
+    if (r.askesgilut?.planning?.goals) {
+      lines.push(`[PERENCANAAN] Tujuan: ${r.askesgilut.planning.goals[0] || '-'}`);
     }
     return lines.join(' | ');
   };

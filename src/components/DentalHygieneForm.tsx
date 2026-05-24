@@ -271,9 +271,20 @@ export const DentalHygieneForm = () => {
         if (!currentRecordId) {
           const draft = records.find((r: any) => r.status === 'draft');
           if (draft) {
-            // Load draft data
-            setFormData(draft as any);
-            setCurrentRecordId(draft.id);
+            // Load draft data with defaults
+            const mergedDraft = {
+              ...(draft as any),
+              askesgilut: {
+                ...DEFAULT_ASKESGILUT,
+                ...(draft as any).askesgilut,
+                planning: {
+                  ...DEFAULT_ASKESGILUT.planning,
+                  ...((draft as any).askesgilut?.planning || {})
+                }
+              }
+            };
+            setFormData(mergedDraft as any);
+            setCurrentRecordId(mergedDraft.id);
           } else {
             // Reset form for new visit if no draft
             // Keep patientId and visitDate
@@ -292,8 +303,34 @@ export const DentalHygieneForm = () => {
     }
   }, [selectedPatientId]);
 
+  const DEFAULT_ASKESGILUT = {
+    categories: {} as Record<string, string[]>,
+    diagnoses: [
+      { kebutuhan: '', penyebab: '', tandaGejala: '' }
+    ],
+    planning: {
+      goals: [''],
+      interventions: [''],
+      evaluativeStatement: [''],
+    },
+    nextVisit: '',
+    recommendations: '',
+  };
+
   const loadRecord = (record: any) => {
-    setFormData(record);
+    // Merge with default askesgilut to prevent crashes on old records
+    const mergedRecord = {
+      ...record,
+      askesgilut: {
+        ...DEFAULT_ASKESGILUT,
+        ...record.askesgilut,
+        planning: {
+          ...DEFAULT_ASKESGILUT.planning,
+          ...(record.askesgilut?.planning || {})
+        }
+      }
+    };
+    setFormData(mergedRecord);
     setCurrentRecordId(record.id);
     setShowHistory(false);
   };
@@ -1476,9 +1513,9 @@ export const DentalHygieneForm = () => {
                               <input 
                                 type="checkbox"
                                 className="mt-1 rounded text-pink focus:ring-pink"
-                                checked={(formData.askesgilut.categories[diag.id] || []).includes(indicator)}
+                                checked={(formData.askesgilut?.categories?.[diag.id] || []).includes(indicator)}
                                 onChange={() => {
-                                  const current = formData.askesgilut.categories[diag.id] || [];
+                                  const current = formData.askesgilut?.categories?.[diag.id] || [];
                                   const next = current.includes(indicator) 
                                     ? current.filter(i => i !== indicator) 
                                     : [...current, indicator];
@@ -1486,7 +1523,7 @@ export const DentalHygieneForm = () => {
                                     ...formData,
                                     askesgilut: {
                                       ...formData.askesgilut,
-                                      categories: { ...formData.askesgilut.categories, [diag.id]: next }
+                                      categories: { ...(formData.askesgilut?.categories || {}), [diag.id]: next }
                                     }
                                   });
                                 }}
@@ -1516,7 +1553,7 @@ export const DentalHygieneForm = () => {
                     </div>
 
                     <div className="space-y-6">
-                      {formData.askesgilut.diagnoses.map((diag, index) => (
+                      {(formData.askesgilut?.diagnoses || []).map((diag, index) => (
                         <div key={index} className="bg-navy-50/50 p-6 rounded-3xl border border-navy/5 space-y-6 relative group">
                           {index > 0 && (
                             <button 
@@ -1602,7 +1639,7 @@ export const DentalHygieneForm = () => {
                           </button>
                         </div>
                         <div className="space-y-3">
-                          {(formData.askesgilut.planning.goals as string[]).map((goal, idx) => (
+                          {(formData.askesgilut?.planning?.goals || ['']).map((goal, idx) => (
                             <div key={idx} className="relative group">
                               <textarea 
                                 className="w-full p-4 bg-navy-50 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-xl text-sm min-h-[120px] transition-all font-medium pr-10"
@@ -1637,7 +1674,7 @@ export const DentalHygieneForm = () => {
                           </button>
                         </div>
                         <div className="space-y-3">
-                          {(formData.askesgilut.planning.interventions as string[]).map((intervention, idx) => (
+                          {(formData.askesgilut?.planning?.interventions || ['']).map((intervention, idx) => (
                             <div key={idx} className="relative group">
                               <textarea 
                                 className="w-full p-4 bg-navy-50 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-xl text-sm min-h-[120px] transition-all font-medium pr-10"
@@ -1672,7 +1709,7 @@ export const DentalHygieneForm = () => {
                           </button>
                         </div>
                         <div className="space-y-3">
-                          {(formData.askesgilut.planning.evaluativeStatement as string[]).map((statement, idx) => (
+                          {(formData.askesgilut?.planning?.evaluativeStatement || ['']).map((statement, idx) => (
                             <div key={idx} className="relative group">
                               <textarea 
                                 className="w-full p-4 bg-navy-50 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-xl text-sm min-h-[120px] transition-all font-medium pr-10"
