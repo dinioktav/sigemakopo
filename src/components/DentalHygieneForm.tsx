@@ -25,7 +25,9 @@ import {
   Calendar,
   History,
   Eye,
-  Trash2
+  Trash2,
+  Mic,
+  Volume2
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { Odontogram } from './Odontogram';
@@ -34,6 +36,9 @@ import { GoogleGenAI } from "@google/genai";
 import { collection, query, orderBy, onSnapshot, addDoc, Timestamp, where, limit, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType, auth } from '../lib/firebase';
 import { ASKESGILUT_DIAGNOSES } from '../constants/askesgilut';
+import { VoiceInputButton } from './VoiceInputButton';
+import { TextToSpeechButton } from './TextToSpeechButton';
+import { VoiceAssistantModal } from './VoiceAssistantModal';
 
 const STEPS = [
   { id: 'anamnesis', label: 'Anamnesis', icon: Stethoscope },
@@ -64,6 +69,116 @@ export const DentalHygieneForm = () => {
   const [patientRecords, setPatientRecords] = useState<any[]>([]);
   const [currentRecordId, setCurrentRecordId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [isVoiceAssistantOpen, setIsVoiceAssistantOpen] = useState(false);
+
+  const DEFAULT_ASKESGILUT = {
+    categories: {} as Record<string, string[]>,
+    diagnoses: [{ kebutuhan: '', penyebab: '', tandaGejala: '' }],
+    planning: {
+      goals: [''],
+      interventions: [''],
+      evaluativeStatement: [''],
+    },
+    nextVisit: '',
+    recommendations: '',
+  };
+
+  const handleVoiceInsert = (text: string, targetField?: string) => {
+    if (!text) return;
+    if (targetField === 'keluhan') {
+      setFormData(prev => ({
+        ...prev,
+        anamnesis: {
+          ...prev.anamnesis,
+          dentalHistory: {
+            ...prev.anamnesis.dentalHistory,
+            reason: prev.anamnesis.dentalHistory.reason ? `${prev.anamnesis.dentalHistory.reason} ${text}` : text
+          }
+        }
+      }));
+    } else if (targetField === 'riwayat') {
+      setFormData(prev => ({
+        ...prev,
+        anamnesis: {
+          ...prev.anamnesis,
+          medicalHistory: {
+            ...prev.anamnesis.medicalHistory,
+            others: prev.anamnesis.medicalHistory.others ? `${prev.anamnesis.medicalHistory.others} ${text}` : text
+          }
+        }
+      }));
+    } else if (targetField === 'diagnosa_penyebab') {
+      setFormData(prev => {
+        const diags = [...(prev.askesgilut?.diagnoses || [])];
+        if (diags.length > 0) {
+          diags[0] = { ...diags[0], penyebab: diags[0].penyebab ? `${diags[0].penyebab} ${text}` : text };
+        } else {
+          diags.push({ kebutuhan: '', penyebab: text, tandaGejala: '' });
+        }
+        return {
+          ...prev,
+          askesgilut: { ...(prev.askesgilut || DEFAULT_ASKESGILUT), diagnoses: diags }
+        };
+      });
+    } else if (targetField === 'diagnosa_gejala') {
+      setFormData(prev => {
+        const diags = [...(prev.askesgilut?.diagnoses || [])];
+        if (diags.length > 0) {
+          diags[0] = { ...diags[0], tandaGejala: diags[0].tandaGejala ? `${diags[0].tandaGejala} ${text}` : text };
+        } else {
+          diags.push({ kebutuhan: '', penyebab: '', tandaGejala: text });
+        }
+        return {
+          ...prev,
+          askesgilut: { ...(prev.askesgilut || DEFAULT_ASKESGILUT), diagnoses: diags }
+        };
+      });
+    } else if (targetField === 'intervensi') {
+      setFormData(prev => {
+        const current = prev.askesgilut?.planning?.interventions || [];
+        const updated = current.length > 0 && current[0] ? [...current, text] : [text];
+        return {
+          ...prev,
+          askesgilut: {
+            ...(prev.askesgilut || DEFAULT_ASKESGILUT),
+            planning: { ...(prev.askesgilut?.planning || { goals: [], interventions: [], evaluativeStatement: [] }), interventions: updated }
+          }
+        };
+      });
+    } else if (targetField === 'tujuan') {
+      setFormData(prev => {
+        const current = prev.askesgilut?.planning?.goals || [];
+        const updated = current.length > 0 && current[0] ? [...current, text] : [text];
+        return {
+          ...prev,
+          askesgilut: {
+            ...(prev.askesgilut || DEFAULT_ASKESGILUT),
+            planning: { ...(prev.askesgilut?.planning || { goals: [], interventions: [], evaluativeStatement: [] }), goals: updated }
+          }
+        };
+      });
+    } else if (targetField === 'evaluasi') {
+      setFormData(prev => {
+        const current = prev.askesgilut?.planning?.evaluativeStatement || [];
+        const updated = current.length > 0 && current[0] ? [...current, text] : [text];
+        return {
+          ...prev,
+          askesgilut: {
+            ...(prev.askesgilut || DEFAULT_ASKESGILUT),
+            planning: { ...(prev.askesgilut?.planning || { goals: [], interventions: [], evaluativeStatement: [] }), evaluativeStatement: updated }
+          }
+        };
+      });
+    } else if (targetField === 'rekomendasi') {
+      setFormData(prev => ({
+        ...prev,
+        askesgilut: {
+          ...(prev.askesgilut || DEFAULT_ASKESGILUT),
+          recommendations: prev.askesgilut?.recommendations ? `${prev.askesgilut.recommendations} ${text}` : text
+        }
+      }));
+    }
+  };
   
   const [formData, setFormData] = useState({
     patientId: '',
@@ -306,20 +421,6 @@ export const DentalHygieneForm = () => {
       return () => unsubscribe();
     }
   }, [selectedPatientId]);
-
-  const DEFAULT_ASKESGILUT = {
-    categories: {} as Record<string, string[]>,
-    diagnoses: [
-      { kebutuhan: '', penyebab: '', tandaGejala: '' }
-    ],
-    planning: {
-      goals: [''],
-      interventions: [''],
-      evaluativeStatement: [''],
-    },
-    nextVisit: '',
-    recommendations: '',
-  };
 
   const loadRecord = (record: any) => {
     // Merge with default askesgilut to prevent crashes on old records
@@ -994,8 +1095,16 @@ export const DentalHygieneForm = () => {
             >
               {currentStep === 0 && (
                 <div className="space-y-10 custom-scrollbar max-h-[60vh] overflow-y-auto pr-4">
-                  <div className="flex items-center gap-3 border-l-4 border-pink pl-4 mb-6">
+                  <div className="flex items-center justify-between border-l-4 border-pink pl-4 mb-6">
                     <h3 className="text-xl font-black text-navy uppercase tracking-wider">Anamnesis Komprehensif</h3>
+                    <button
+                      type="button"
+                      onClick={() => setIsVoiceAssistantOpen(true)}
+                      className="flex items-center gap-2 px-4 py-2 bg-pink/10 hover:bg-pink text-pink hover:text-white rounded-2xl text-xs font-black transition-all border border-pink/20 uppercase tracking-widest shadow-sm"
+                    >
+                      <Mic size={14} className="animate-pulse" />
+                      <span>Bicara / Dikte Suara</span>
+                    </button>
                   </div>
 
                   {/* Riwayat Kesehatan Umum */}
@@ -1020,11 +1129,21 @@ export const DentalHygieneForm = () => {
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest ml-2">Penyakit Serius / Operasi</label>
+                        <div className="flex items-center justify-between ml-2">
+                          <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest">Penyakit Serius / Operasi</label>
+                          <div className="flex items-center gap-1.5">
+                            <VoiceInputButton 
+                              size="sm"
+                              currentValue={formData.anamnesis.medicalHistory.seriousIllness}
+                              onTranscript={text => setFormData({...formData, anamnesis: {...formData.anamnesis, medicalHistory: {...formData.anamnesis.medicalHistory, seriousIllness: text}}})}
+                            />
+                            <TextToSpeechButton text={formData.anamnesis.medicalHistory.seriousIllness} size="sm" />
+                          </div>
+                        </div>
                         <input 
                           type="text"
                           className="w-full px-6 py-3 bg-white border-2 border-transparent focus:border-pink focus:ring-0 rounded-xl text-sm font-bold"
-                          placeholder="Sebutkan jika ada..."
+                          placeholder="Sebutkan jika ada (bisa gunakan mikrofon)..."
                           value={formData.anamnesis.medicalHistory.seriousIllness}
                           onChange={e => setFormData({...formData, anamnesis: {...formData.anamnesis, medicalHistory: {...formData.anamnesis.medicalHistory, seriousIllness: e.target.value}}})}
                         />
@@ -1049,9 +1168,20 @@ export const DentalHygieneForm = () => {
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest ml-2">Pembekuan Darah / Lainnya</label>
+                        <div className="flex items-center justify-between ml-2">
+                          <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest">Pembekuan Darah / Lainnya</label>
+                          <div className="flex items-center gap-1.5">
+                            <VoiceInputButton 
+                              size="sm"
+                              currentValue={formData.anamnesis.medicalHistory.others}
+                              onTranscript={text => setFormData({...formData, anamnesis: {...formData.anamnesis, medicalHistory: {...formData.anamnesis.medicalHistory, others: text}}})}
+                            />
+                            <TextToSpeechButton text={formData.anamnesis.medicalHistory.others} size="sm" />
+                          </div>
+                        </div>
                         <textarea 
                           className="w-full px-6 py-3 bg-white border-2 border-transparent focus:border-pink focus:ring-0 rounded-xl text-sm font-bold min-h-[80px]"
+                          placeholder="Catatan pembekuan darah atau riwayat lainnya..."
                           value={formData.anamnesis.medicalHistory.others}
                           onChange={e => setFormData({...formData, anamnesis: {...formData.anamnesis, medicalHistory: {...formData.anamnesis.medicalHistory, others: e.target.value}}})}
                         />
@@ -1066,10 +1196,20 @@ export const DentalHygieneForm = () => {
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest ml-2">Alasan Kunjungan</label>
+                        <div className="flex items-center justify-between ml-2">
+                          <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest">Alasan Kunjungan</label>
+                          <div className="flex items-center gap-1.5">
+                            <VoiceInputButton 
+                              size="sm"
+                              currentValue={formData.anamnesis.dentalHistory.reason}
+                              onTranscript={text => setFormData({...formData, anamnesis: {...formData.anamnesis, dentalHistory: {...formData.anamnesis.dentalHistory, reason: text}}})}
+                            />
+                            <TextToSpeechButton text={formData.anamnesis.dentalHistory.reason} size="sm" />
+                          </div>
+                        </div>
                         <textarea 
                           className="w-full px-6 py-3 bg-white border-2 border-transparent focus:border-pink focus:ring-0 rounded-xl text-sm font-bold min-h-[60px]"
-                          placeholder="Apa yang ingin dicapai hari ini?"
+                          placeholder="Apa keluhan atau tujuan kunjungan hari ini? (Bisa langsung bicara via mikrofon)"
                           value={formData.anamnesis.dentalHistory.reason}
                           onChange={e => setFormData({...formData, anamnesis: {...formData.anamnesis, dentalHistory: {...formData.anamnesis.dentalHistory, reason: e.target.value}}})}
                         />
@@ -1482,9 +1622,16 @@ export const DentalHygieneForm = () => {
               {currentStep === 4 && (
                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="bg-navy-50/50 p-8 rounded-[2rem] border border-navy/5">
-                    <h3 className="text-xl font-black text-navy uppercase tracking-tight mb-6 flex items-center gap-3">
-                      <FileCheck className="text-pink" /> Persetujuan Tindakan Medis (Informed Consent)
-                    </h3>
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-xl font-black text-navy uppercase tracking-tight flex items-center gap-3">
+                        <FileCheck className="text-pink" /> Persetujuan Tindakan Medis (Informed Consent)
+                      </h3>
+                      <TextToSpeechButton 
+                        text="Pernyataan Pasien atau Penanggung Jawab. Saya yang bertanda tangan di bawah ini, menyatakan telah menerima penjelasan lengkap mengenai diagnosis dan tata cara tindakan medis yang akan dilakukan, tujuan tindakan medis yang dilakukan, risiko dan komplikasi yang mungkin terjadi, dan prognosis terhadap tindakan yang dilakukan. Dengan ini saya memberikan persetujuan untuk dilakukan tindakan asuhan kesehatan gigi dan mulut oleh Terapis Gigi dan Mulut yang bertugas." 
+                        size="md"
+                        label="Bacakan Persetujuan"
+                      />
+                    </div>
                     <div className="prose prose-sm max-w-none text-navy/70 mb-8 bg-white p-8 rounded-3xl border border-navy/5 shadow-sm">
                       <p className="font-black text-navy uppercase tracking-[0.2em] text-[10px] mb-6 border-b border-navy/5 pb-4">Pernyataan Pasien / Penanggung Jawab:</p>
                       <div className="space-y-4 font-medium leading-relaxed">
@@ -1502,7 +1649,14 @@ export const DentalHygieneForm = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div className="space-y-6">
                         <div className="space-y-3">
-                          <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest ml-4">Nama Saksi / Keluarga</label>
+                          <div className="flex items-center justify-between ml-4">
+                            <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest">Nama Saksi / Keluarga</label>
+                            <VoiceInputButton
+                              size="sm"
+                              currentValue={formData.consent.witnessName}
+                              onTranscript={text => setFormData(prev => ({ ...prev, consent: { ...prev.consent, witnessName: text } }))}
+                            />
+                          </div>
                           <input 
                             type="text" 
                             className="w-full px-8 py-5 bg-white border-2 border-transparent focus:border-pink focus:ring-0 rounded-2xl text-sm transition-all font-bold shadow-sm"
@@ -1615,12 +1769,21 @@ export const DentalHygieneForm = () => {
                       <h4 className="text-xs font-black text-navy/40 uppercase tracking-[0.2em] flex items-center gap-2">
                         <AlertCircle size={14} className="text-pink" /> Diagnosis Askesgilut (Dental Hygiene Diagnosis)
                       </h4>
-                      <button 
-                        onClick={addDiagnosis}
-                        className="flex items-center gap-2 px-4 py-2 bg-navy text-gold rounded-xl text-[10px] font-black hover:bg-navy-light transition-all uppercase tracking-widest"
-                      >
-                        <Plus size={14} /> Tambah Diagnosa
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsVoiceAssistantOpen(true)}
+                          className="flex items-center gap-1.5 px-3 py-2 bg-pink/10 hover:bg-pink text-pink hover:text-white rounded-xl text-[10px] font-black transition-all border border-pink/20 uppercase tracking-wider"
+                        >
+                          <Mic size={13} className="animate-pulse" /> Dikte Suara
+                        </button>
+                        <button 
+                          onClick={addDiagnosis}
+                          className="flex items-center gap-2 px-4 py-2 bg-navy text-gold rounded-xl text-[10px] font-black hover:bg-navy-light transition-all uppercase tracking-widest"
+                        >
+                          <Plus size={14} /> Tambah Diagnosa
+                        </button>
+                      </div>
                     </div>
 
                     <div className="space-y-6">
@@ -1671,9 +1834,27 @@ export const DentalHygieneForm = () => {
                               )}
                             </div>
                             <div className="space-y-2">
-                              <label className="text-[10px] font-black text-navy/60 uppercase tracking-widest ml-2">Penyebab</label>
+                              <div className="flex items-center justify-between ml-2">
+                                <label className="text-[10px] font-black text-navy/60 uppercase tracking-widest">Penyebab</label>
+                                <div className="flex items-center gap-1.5">
+                                  <VoiceInputButton 
+                                    size="sm"
+                                    currentValue={diag.penyebab}
+                                    onTranscript={text => {
+                                      const diags = formData.askesgilut?.diagnoses || [];
+                                      const newDiags = [...diags];
+                                      if (newDiags[index]) {
+                                        newDiags[index].penyebab = text;
+                                        setFormData({...formData, askesgilut: {...(formData.askesgilut || DEFAULT_ASKESGILUT), diagnoses: newDiags}});
+                                      }
+                                    }}
+                                  />
+                                  <TextToSpeechButton text={diag.penyebab} size="sm" />
+                                </div>
+                              </div>
                               <textarea 
                                 className="w-full p-4 bg-white border-transparent focus:border-pink focus:ring-0 rounded-xl text-sm min-h-[100px] transition-all font-medium"
+                                placeholder="Penyebab masalah (bisa gunakan mikrofon)..."
                                 value={diag.penyebab}
                                 onChange={e => {
                                   const diags = formData.askesgilut?.diagnoses || [];
@@ -1686,9 +1867,27 @@ export const DentalHygieneForm = () => {
                               />
                             </div>
                             <div className="space-y-2">
-                              <label className="text-[10px] font-black text-navy/60 uppercase tracking-widest ml-2">Tanda-tanda dan gejala</label>
+                              <div className="flex items-center justify-between ml-2">
+                                <label className="text-[10px] font-black text-navy/60 uppercase tracking-widest">Tanda-tanda dan gejala</label>
+                                <div className="flex items-center gap-1.5">
+                                  <VoiceInputButton 
+                                    size="sm"
+                                    currentValue={diag.tandaGejala}
+                                    onTranscript={text => {
+                                      const diags = formData.askesgilut?.diagnoses || [];
+                                      const newDiags = [...diags];
+                                      if (newDiags[index]) {
+                                        newDiags[index].tandaGejala = text;
+                                        setFormData({...formData, askesgilut: {...(formData.askesgilut || DEFAULT_ASKESGILUT), diagnoses: newDiags}});
+                                      }
+                                    }}
+                                  />
+                                  <TextToSpeechButton text={diag.tandaGejala} size="sm" />
+                                </div>
+                              </div>
                               <textarea 
                                 className="w-full p-4 bg-white border-transparent focus:border-pink focus:ring-0 rounded-xl text-sm min-h-[100px] transition-all font-medium"
+                                placeholder="Tanda dan gejala klinis..."
                                 value={diag.tandaGejala}
                                 onChange={e => {
                                   const diags = formData.askesgilut?.diagnoses || [];
@@ -1713,32 +1912,58 @@ export const DentalHygieneForm = () => {
                       <div className="p-6 space-y-4">
                         <div className="flex items-center justify-between">
                           <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest block">Tujuan Berpusat Pada Klien</label>
-                          <button 
-                            type="button"
-                            onClick={() => addPlanningItem('goals')}
-                            className="p-1.5 bg-navy-50 text-navy hover:bg-navy hover:text-white rounded-xl transition-all"
-                          >
-                            <Plus size={14} />
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            <VoiceInputButton 
+                              size="sm"
+                              onTranscript={text => {
+                                const current = formData.askesgilut?.planning?.goals || [];
+                                setFormData({
+                                  ...formData,
+                                  askesgilut: {
+                                    ...(formData.askesgilut || DEFAULT_ASKESGILUT),
+                                    planning: {
+                                      ...(formData.askesgilut?.planning || { goals: [], interventions: [], evaluativeStatement: [] }),
+                                      goals: current.length > 0 && current[0] ? [...current, text] : [text]
+                                    }
+                                  }
+                                });
+                              }}
+                            />
+                            <button 
+                              type="button"
+                              onClick={() => addPlanningItem('goals')}
+                              className="p-1.5 bg-navy-50 text-navy hover:bg-navy hover:text-white rounded-xl transition-all"
+                            >
+                              <Plus size={14} />
+                            </button>
+                          </div>
                         </div>
                         <div className="space-y-3">
                           {(formData.askesgilut?.planning?.goals || ['']).map((goal, idx) => (
                             <div key={idx} className="relative group">
+                              <div className="absolute top-2 right-2 flex items-center gap-1 z-10">
+                                <VoiceInputButton 
+                                  size="sm"
+                                  currentValue={goal}
+                                  onTranscript={text => updatePlanningItem('goals', idx, text)}
+                                />
+                                <TextToSpeechButton text={goal} size="sm" />
+                                {idx > 0 && (
+                                  <button 
+                                    type="button"
+                                    onClick={() => removePlanningItem('goals', idx)}
+                                    className="p-1 text-pink opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                )}
+                              </div>
                               <textarea 
-                                className="w-full p-4 bg-navy-50 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-xl text-sm min-h-[120px] transition-all font-medium pr-10"
+                                className="w-full p-4 pt-10 bg-navy-50 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-xl text-sm min-h-[120px] transition-all font-medium"
                                 value={goal}
                                 onChange={e => updatePlanningItem('goals', idx, e.target.value)}
                                 placeholder={`Tujuan ${idx + 1}...`}
                               />
-                              {idx > 0 && (
-                                <button 
-                                  type="button"
-                                  onClick={() => removePlanningItem('goals', idx)}
-                                  className="absolute top-2 right-2 p-1 text-pink opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
-                                >
-                                  <X size={14} />
-                                </button>
-                              )}
                             </div>
                           ))}
                         </div>
@@ -1748,32 +1973,58 @@ export const DentalHygieneForm = () => {
                       <div className="p-6 space-y-4">
                         <div className="flex items-center justify-between">
                           <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest block">Intervensi Askesgilut</label>
-                          <button 
-                            type="button"
-                            onClick={() => addPlanningItem('interventions')}
-                            className="p-1.5 bg-navy-50 text-navy hover:bg-navy hover:text-white rounded-xl transition-all"
-                          >
-                            <Plus size={14} />
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            <VoiceInputButton 
+                              size="sm"
+                              onTranscript={text => {
+                                const current = formData.askesgilut?.planning?.interventions || [];
+                                setFormData({
+                                  ...formData,
+                                  askesgilut: {
+                                    ...(formData.askesgilut || DEFAULT_ASKESGILUT),
+                                    planning: {
+                                      ...(formData.askesgilut?.planning || { goals: [], interventions: [], evaluativeStatement: [] }),
+                                      interventions: current.length > 0 && current[0] ? [...current, text] : [text]
+                                    }
+                                  }
+                                });
+                              }}
+                            />
+                            <button 
+                              type="button"
+                              onClick={() => addPlanningItem('interventions')}
+                              className="p-1.5 bg-navy-50 text-navy hover:bg-navy hover:text-white rounded-xl transition-all"
+                            >
+                              <Plus size={14} />
+                            </button>
+                          </div>
                         </div>
                         <div className="space-y-3">
                           {(formData.askesgilut?.planning?.interventions || ['']).map((intervention, idx) => (
                             <div key={idx} className="relative group">
+                              <div className="absolute top-2 right-2 flex items-center gap-1 z-10">
+                                <VoiceInputButton 
+                                  size="sm"
+                                  currentValue={intervention}
+                                  onTranscript={text => updatePlanningItem('interventions', idx, text)}
+                                />
+                                <TextToSpeechButton text={intervention} size="sm" />
+                                {idx > 0 && (
+                                  <button 
+                                    type="button"
+                                    onClick={() => removePlanningItem('interventions', idx)}
+                                    className="p-1 text-pink opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                )}
+                              </div>
                               <textarea 
-                                className="w-full p-4 bg-navy-50 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-xl text-sm min-h-[120px] transition-all font-medium pr-10"
+                                className="w-full p-4 pt-10 bg-navy-50 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-xl text-sm min-h-[120px] transition-all font-medium"
                                 value={intervention}
                                 onChange={e => updatePlanningItem('interventions', idx, e.target.value)}
                                 placeholder={`Intervensi ${idx + 1}...`}
                               />
-                              {idx > 0 && (
-                                <button 
-                                  type="button"
-                                  onClick={() => removePlanningItem('interventions', idx)}
-                                  className="absolute top-2 right-2 p-1 text-pink opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
-                                >
-                                  <X size={14} />
-                                </button>
-                              )}
                             </div>
                           ))}
                         </div>
@@ -1783,32 +2034,58 @@ export const DentalHygieneForm = () => {
                       <div className="p-6 space-y-4">
                         <div className="flex items-center justify-between">
                           <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest block">Pernyataan Evaluativ</label>
-                          <button 
-                            type="button"
-                            onClick={() => addPlanningItem('evaluativeStatement')}
-                            className="p-1.5 bg-navy-50 text-navy hover:bg-navy hover:text-white rounded-xl transition-all"
-                          >
-                            <Plus size={14} />
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            <VoiceInputButton 
+                              size="sm"
+                              onTranscript={text => {
+                                const current = formData.askesgilut?.planning?.evaluativeStatement || [];
+                                setFormData({
+                                  ...formData,
+                                  askesgilut: {
+                                    ...(formData.askesgilut || DEFAULT_ASKESGILUT),
+                                    planning: {
+                                      ...(formData.askesgilut?.planning || { goals: [], interventions: [], evaluativeStatement: [] }),
+                                      evaluativeStatement: current.length > 0 && current[0] ? [...current, text] : [text]
+                                    }
+                                  }
+                                });
+                              }}
+                            />
+                            <button 
+                              type="button"
+                              onClick={() => addPlanningItem('evaluativeStatement')}
+                              className="p-1.5 bg-navy-50 text-navy hover:bg-navy hover:text-white rounded-xl transition-all"
+                            >
+                              <Plus size={14} />
+                            </button>
+                          </div>
                         </div>
                         <div className="space-y-3">
                           {(formData.askesgilut?.planning?.evaluativeStatement || ['']).map((statement, idx) => (
                             <div key={idx} className="relative group">
+                              <div className="absolute top-2 right-2 flex items-center gap-1 z-10">
+                                <VoiceInputButton 
+                                  size="sm"
+                                  currentValue={statement}
+                                  onTranscript={text => updatePlanningItem('evaluativeStatement', idx, text)}
+                                />
+                                <TextToSpeechButton text={statement} size="sm" />
+                                {idx > 0 && (
+                                  <button 
+                                    type="button"
+                                    onClick={() => removePlanningItem('evaluativeStatement', idx)}
+                                    className="p-1 text-pink opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                )}
+                              </div>
                               <textarea 
-                                className="w-full p-4 bg-navy-50 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-xl text-sm min-h-[120px] transition-all font-medium pr-10"
+                                className="w-full p-4 pt-10 bg-navy-50 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-xl text-sm min-h-[120px] transition-all font-medium"
                                 value={statement}
                                 onChange={e => updatePlanningItem('evaluativeStatement', idx, e.target.value)}
                                 placeholder={`Evaluasi ${idx + 1}...`}
                               />
-                              {idx > 0 && (
-                                <button 
-                                  type="button"
-                                  onClick={() => removePlanningItem('evaluativeStatement', idx)}
-                                  className="absolute top-2 right-2 p-1 text-pink opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
-                                >
-                                  <X size={14} />
-                                </button>
-                              )}
                             </div>
                           ))}
                         </div>
@@ -1819,7 +2096,17 @@ export const DentalHygieneForm = () => {
                   {/* Recommendations & Follow-up */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest ml-2">Jadwal Kunjungan Berikutnya</label>
+                      <div className="flex items-center justify-between ml-2">
+                        <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest">Jadwal Kunjungan Berikutnya</label>
+                        <div className="flex items-center gap-1.5">
+                          <VoiceInputButton 
+                            size="sm"
+                            currentValue={formData.askesgilut?.nextVisit || ''}
+                            onTranscript={text => setFormData({...formData, askesgilut: {...(formData.askesgilut || DEFAULT_ASKESGILUT), nextVisit: text}})}
+                          />
+                          <TextToSpeechButton text={formData.askesgilut?.nextVisit || ''} size="sm" />
+                        </div>
+                      </div>
                       <input 
                         type="text"
                         className="w-full px-6 py-4 bg-white border-2 border-navy/5 focus:border-pink focus:ring-0 rounded-2xl text-sm font-bold"
@@ -1829,10 +2116,21 @@ export const DentalHygieneForm = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest ml-2">Rekomendasi Perawatan Selanjutnya</label>
+                      <div className="flex items-center justify-between ml-2">
+                        <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest">Rekomendasi Perawatan Selanjutnya</label>
+                        <div className="flex items-center gap-1.5">
+                          <VoiceInputButton 
+                            size="sm"
+                            currentValue={formData.askesgilut?.recommendations || ''}
+                            onTranscript={text => setFormData({...formData, askesgilut: {...(formData.askesgilut || DEFAULT_ASKESGILUT), recommendations: text}})}
+                          />
+                          <TextToSpeechButton text={formData.askesgilut?.recommendations || ''} size="sm" />
+                        </div>
+                      </div>
                       <input 
                         type="text"
                         className="w-full px-6 py-4 bg-white border-2 border-navy/5 focus:border-pink focus:ring-0 rounded-2xl text-sm font-bold"
+                        placeholder="Rekomendasi perawatan..."
                         value={formData.askesgilut?.recommendations || ''}
                         onChange={e => setFormData({...formData, askesgilut: {...(formData.askesgilut || DEFAULT_ASKESGILUT), recommendations: e.target.value}})}
                       />
@@ -2043,6 +2341,15 @@ export const DentalHygieneForm = () => {
 
           <div className="flex items-center gap-4">
             <button 
+              type="button"
+              onClick={() => setIsVoiceAssistantOpen(true)}
+              className="flex items-center gap-2 px-5 py-3 bg-pink/10 hover:bg-pink text-pink hover:text-white border-2 border-pink/20 rounded-xl font-black transition-all uppercase tracking-widest text-xs shadow-sm group active:scale-95"
+              title="Bicara langsung ke mikrofon untuk dikte suara dan text-to-speech"
+            >
+              <Mic size={16} className="group-hover:animate-bounce" />
+              <span>Dikte Suara</span>
+            </button>
+            <button 
               onClick={handleSaveProgress}
               disabled={isSaving}
               className="flex items-center gap-2 px-6 py-3 bg-white border-2 border-navy/5 rounded-xl font-black text-navy/40 hover:text-pink hover:border-pink transition-all uppercase tracking-widest text-xs"
@@ -2061,6 +2368,13 @@ export const DentalHygieneForm = () => {
           </div>
         </div>
       </div>
+
+      {/* Voice Assistant Modal for voice-to-text and text-to-speech */}
+      <VoiceAssistantModal 
+        isOpen={isVoiceAssistantOpen}
+        onClose={() => setIsVoiceAssistantOpen(false)}
+        onInsertText={handleVoiceInsert}
+      />
     </div>
   );
 };

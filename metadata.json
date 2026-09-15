@@ -3,8 +3,10 @@
   "description": "Sistem Kesehatan Gigi Masyarakat Kopo (SIGEMA KOPO) - Sistem asuhan kesehatan gigi dan mulut individu sesuai standar WHO dan Kemenkes RI.",
   "requestFramePermissions": [
     "camera",
-    "geolocation"
+    "geolocation",
+    "microphone"
   ],
-  "y7": [],
-  "Yp": []
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

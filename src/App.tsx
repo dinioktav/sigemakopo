@@ -26,7 +26,8 @@ import {
   User,
   Briefcase,
   Save,
-  Download
+  Download,
+  Mic
 } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -63,6 +64,7 @@ import { Appointments } from './components/Appointments';
 import { Security } from './components/Security';
 import { DentalEducation } from './components/DentalEducation';
 import { UserManagement } from './components/UserManagement';
+import { VoiceAssistantModal } from './components/VoiceAssistantModal';
 
 const MOCK_CHART_DATA: any[] = [];
 
@@ -943,6 +945,7 @@ const Layout = ({ children, userData, setUserData, onLogout }: { children: React
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isGlobalVoiceOpen, setIsGlobalVoiceOpen] = useState(false);
   const location = useLocation();
 
   // Close sidebar on navigation for mobile
@@ -1041,7 +1044,17 @@ const Layout = ({ children, userData, setUserData, onLogout }: { children: React
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <button 
+              type="button"
+              onClick={() => setIsGlobalVoiceOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-pink/10 hover:bg-pink text-pink hover:text-white rounded-xl text-xs font-bold transition-all border border-pink/20 shadow-sm active:scale-95 group"
+              title="Bicara ke Sistem (Dikte Suara & Text to Speech)"
+            >
+              <Mic size={15} className="group-hover:animate-pulse" />
+              <span className="hidden sm:inline font-black uppercase tracking-wider text-[11px]">Dikte Suara</span>
+            </button>
+
             <button className="p-2 text-gray-400 hover:bg-gray-100 rounded-full relative">
               <Bell size={18} />
               <span className="absolute top-2 right-2 w-2 h-2 bg-danger rounded-full border-2 border-white"></span>
@@ -1146,6 +1159,12 @@ const Layout = ({ children, userData, setUserData, onLogout }: { children: React
           </AnimatePresence>
         </main>
       </div>
+
+      {/* Global Voice Assistant & Dictation Modal */}
+      <VoiceAssistantModal 
+        isOpen={isGlobalVoiceOpen} 
+        onClose={() => setIsGlobalVoiceOpen(false)} 
+      />
     </div>
   );
 };
