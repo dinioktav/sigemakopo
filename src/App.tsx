@@ -27,7 +27,23 @@ import {
   Briefcase,
   Save,
   Download,
-  Mic
+  Mic,
+  Award,
+  CheckCircle2,
+  HeartPulse,
+  Stethoscope,
+  Smile,
+  BookOpen,
+  Sparkles,
+  Layers,
+  Filter,
+  Check,
+  Info,
+  ListFilter,
+  CheckSquare,
+  ArrowRight,
+  ShieldAlert,
+  FileText
 } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -52,7 +68,8 @@ import {
   Pie, 
   Cell,
   LineChart,
-  Line
+  Line,
+  Legend
 } from 'recharts';
 
 // Components
@@ -669,6 +686,7 @@ const Dashboard = () => {
 };
 
 const Reports = () => {
+  const [activeTab, setActiveTab] = useState<'overview' | 'assessment' | 'diagnosis' | 'interventions' | 'monthly'>('overview');
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [records, setRecords] = useState<any[]>([]);
@@ -681,11 +699,10 @@ const Reports = () => {
   useEffect(() => {
     const unsubRecords = onSnapshot(query(collection(db, 'dental_records'), orderBy('createdAt', 'desc')), (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      // Ensure unique IDs
       const uniqueData = Array.from(new Map(data.map(item => [item.id, item])).values());
       setRecords(uniqueData);
       
-      // Calculate Chart Data for Reports
+      // Calculate 6 Months Trend for Askesgilut
       const last6Months = Array.from({ length: 6 }, (_, i) => {
         const d = new Date();
         d.setMonth(d.getMonth() - i);
@@ -695,6 +712,7 @@ const Reports = () => {
           name: d.toLocaleString('id-ID', { month: 'short' }),
           dmft: 0,
           ohis: 0,
+          preventive: 0,
           count: 0
         };
       }).reverse();
@@ -708,6 +726,14 @@ const Reports = () => {
         if (monthData) {
           monthData.dmft += r.indices?.dmft?.total || 0;
           monthData.ohis += r.indices?.ohis?.total || 0;
+          
+          // Check preventive actions (scaling, DHE, TAF, sealant)
+          const items = r.billing?.items || [];
+          const hasPrev = items.some((item: any) => 
+            /skeling|scaling|fluor|dhe|penyuluhan|sealant/i.test(item.name || '')
+          );
+          if (hasPrev) monthData.preventive++;
+          
           monthData.count++;
         }
       });
@@ -715,7 +741,8 @@ const Reports = () => {
       setChartData(last6Months.map(m => ({
         ...m,
         dmft: m.count > 0 ? parseFloat((m.dmft / m.count).toFixed(2)) : 0,
-        ohis: m.count > 0 ? parseFloat((m.ohis / m.count).toFixed(2)) : 0
+        ohis: m.count > 0 ? parseFloat((m.ohis / m.count).toFixed(2)) : 0,
+        preventiveRate: m.count > 0 ? Math.round((m.preventive / m.count) * 100) : 0
       })));
     });
 
@@ -732,6 +759,154 @@ const Reports = () => {
     };
   }, []);
 
+  // Compute Asuhan Kesehatan Gigi dan Mulut (Askesgilut) Metrics
+  const askesgilutStats = React.useMemo(() => {
+    const total = records.length || 1;
+    let ohisBaik = 0;
+    let ohisSedang = 0;
+    let ohisBuruk = 0;
+    let sumOhis = 0;
+    let sumDi = 0;
+    let sumCi = 0;
+
+    let sumD = 0;
+    let sumM = 0;
+    let sumF = 0;
+    let sumDeft = 0;
+    let cariesFree = 0;
+
+    const diagnosesMap: Record<string, number> = {};
+    const interventionsMap: Record<string, number> = {
+      'Skeling / Scaling Gigi': 0,
+      'Dental Health Education (DHE)': 0,
+      'Topikal Aplikasi Fluor (TAF)': 0,
+      'Fissure Sealant': 0,
+      'Penambalan Gigi (ART/GIC)': 0,
+      'Pencabutan Gigi Sulung': 0,
+      'Rujukan Spesialis': 0
+    };
+
+    let completedAskes = 0;
+    let controlledVisits = 0;
+
+    records.forEach((r: any) => {
+      // 1. OHI-S & Kriteria
+      const ohisVal = typeof r.indices?.ohis?.total === 'number' ? r.indices.ohis.total : 0;
+      const diVal = typeof r.indices?.ohis?.di === 'number' ? r.indices.ohis.di : 0;
+      const ciVal = typeof r.indices?.ohis?.ci === 'number' ? r.indices.ohis.ci : 0;
+
+      sumOhis += ohisVal;
+      sumDi += diVal;
+      sumCi += ciVal;
+
+      if (ohisVal <= 1.2) ohisBaik++;
+      else if (ohisVal <= 3.0) ohisSedang++;
+      else ohisBuruk++;
+
+      // 2. DMF-T & def-t
+      const d = r.indices?.dmft?.d || 0;
+      const m = r.indices?.dmft?.m || 0;
+      const f = r.indices?.dmft?.f || 0;
+      const totalDmft = r.indices?.dmft?.total || (d + m + f);
+      sumD += d;
+      sumM += m;
+      sumF += f;
+      if (totalDmft === 0) cariesFree++;
+
+      const deftVal = r.indices?.deft?.total || 0;
+      sumDeft += deftVal;
+
+      // 3. Human Needs Diagnosis
+      r.askesgilut?.diagnoses?.forEach((diag: any) => {
+        if (diag.kebutuhan && diag.kebutuhan.trim()) {
+          const k = diag.kebutuhan.trim();
+          diagnosesMap[k] = (diagnosesMap[k] || 0) + 1;
+        }
+      });
+
+      // 4. Intervensi Tindakan
+      const billingItems = r.billing?.items || [];
+      const planInterventions = r.askesgilut?.planning?.interventions || [];
+      const soapieIntervention = r.soapie?.intervention || '';
+
+      const allInterventionText = [
+        ...billingItems.map((b: any) => b.name || ''),
+        ...planInterventions,
+        soapieIntervention
+      ].join(' ').toLowerCase();
+
+      if (/skeling|scaling|karang/i.test(allInterventionText)) interventionsMap['Skeling / Scaling Gigi']++;
+      if (/dhe|penyuluhan|edukasi|sikat gigi/i.test(allInterventionText)) interventionsMap['Dental Health Education (DHE)']++;
+      if (/fluor|taf/i.test(allInterventionText)) interventionsMap['Topikal Aplikasi Fluor (TAF)']++;
+      if (/sealant|fisur/i.test(allInterventionText)) interventionsMap['Fissure Sealant']++;
+      if (/tumpat|tambal|gic|art/i.test(allInterventionText)) interventionsMap['Penambalan Gigi (ART/GIC)']++;
+      if (/cabut|ekstraksi|sulung/i.test(allInterventionText)) interventionsMap['Pencabutan Gigi Sulung']++;
+      if (/rujuk|rujukan/i.test(allInterventionText)) interventionsMap['Rujukan Spesialis']++;
+
+      // 5. Evaluasi Asuhan
+      if (r.status === 'final') completedAskes++;
+      if (r.askesgilut?.nextVisit || /kontrol|kunjungan ulang/i.test(r.askesgilut?.recommendations || '')) {
+        controlledVisits++;
+      }
+    });
+
+    const avgOhis = parseFloat((sumOhis / total).toFixed(2));
+    const avgDi = parseFloat((sumDi / total).toFixed(2));
+    const avgCi = parseFloat((sumCi / total).toFixed(2));
+    const avgDmft = parseFloat(((sumD + sumM + sumF) / total).toFixed(2));
+    const careIndex = (sumD + sumM + sumF) > 0 ? Math.round((sumF / (sumD + sumM + sumF)) * 100) : 0;
+    const cariesFreePct = Math.round((cariesFree / total) * 100);
+
+    const totalPrevActions = interventionsMap['Skeling / Scaling Gigi'] + 
+                             interventionsMap['Dental Health Education (DHE)'] + 
+                             interventionsMap['Topikal Aplikasi Fluor (TAF)'] + 
+                             interventionsMap['Fissure Sealant'];
+    const totalCurativeActions = interventionsMap['Penambalan Gigi (ART/GIC)'] + 
+                                interventionsMap['Pencabutan Gigi Sulung'];
+    const totalAllActions = totalPrevActions + totalCurativeActions || 1;
+    const prevRatio = Math.round((totalPrevActions / totalAllActions) * 100);
+
+    // OHI-S Distribution Pie
+    const ohisPie = [
+      { name: 'Baik (0.0 - 1.2)', value: ohisBaik, count: ohisBaik, pct: Math.round((ohisBaik / total) * 100), color: '#10b981' },
+      { name: 'Sedang (1.3 - 3.0)', value: ohisSedang, count: ohisSedang, pct: Math.round((ohisSedang / total) * 100), color: '#f59e0b' },
+      { name: 'Buruk (3.1 - 6.0)', value: ohisBuruk, count: ohisBuruk, pct: Math.round((ohisBuruk / total) * 100), color: '#f43f5e' }
+    ];
+
+    // Diagnoses Bar List
+    const humanNeedsList = Object.entries(diagnosesMap)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+
+    // Interventions Bar List
+    const interventionsList = Object.entries(interventionsMap)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+
+    return {
+      total,
+      ohisBaik,
+      ohisSedang,
+      ohisBuruk,
+      avgOhis,
+      avgDi,
+      avgCi,
+      ohisPie,
+      sumD,
+      sumM,
+      sumF,
+      sumDeft,
+      avgDmft,
+      careIndex,
+      cariesFreePct,
+      humanNeedsList,
+      interventionsList,
+      prevRatio,
+      completedAskes,
+      controlledVisits
+    };
+  }, [records]);
+
   const formatAssessment = (r: any) => {
     const lines = [];
     if (r.anamnesis) {
@@ -740,14 +915,19 @@ const Reports = () => {
     if (r.indices) {
       const ohisVal = r.indices.ohis?.total || 0;
       const ohisCat = r.indices.ohis?.category || (ohisVal <= 1.2 ? 'Baik' : ohisVal <= 3.0 ? 'Sedang' : 'Buruk');
-      lines.push(`[INDEKS] DMF-T: ${r.indices.dmft?.total || 0}, OHI-S: ${ohisVal} (${ohisCat})`);
+      lines.push(`[PENGKAJIAN] DMF-T: ${r.indices.dmft?.total || 0} (D:${r.indices.dmft?.d||0} M:${r.indices.dmft?.m||0} F:${r.indices.dmft?.f||0}) | OHI-S: ${ohisVal} (Kriteria: ${ohisCat})`);
     }
-    if (r.askesgilut?.diagnoses) {
+    if (r.askesgilut?.diagnoses?.length > 0) {
       const diag = r.askesgilut.diagnoses.map((d: any) => d.kebutuhan).filter(Boolean).join(', ');
-      lines.push(`[DIAGNOSIS] ${diag || '-'}`);
+      lines.push(`[DIAGNOSIS ASKESGILUT] ${diag || '-'}`);
     }
-    if (r.askesgilut?.planning?.goals) {
-      lines.push(`[PERENCANAAN] Tujuan: ${r.askesgilut.planning.goals[0] || '-'}`);
+    if (r.billing?.items?.length > 0) {
+      const items = r.billing.items.map((i: any) => i.name).join(', ');
+      lines.push(`[TINDAKAN] ${items}`);
+    }
+    if (r.soapie?.evaluation || r.askesgilut?.planning?.evaluativeStatement?.length > 0) {
+      const ev = r.soapie?.evaluation || r.askesgilut.planning.evaluativeStatement[0] || 'Tujuan Asuhan Tercapai';
+      lines.push(`[EVALUASI] ${ev}`);
     }
     return lines.join(' | ');
   };
@@ -756,24 +936,34 @@ const Reports = () => {
     setIsAnalyzing(true);
     setAiAnalysis(null);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-      
-      const dmftAvg = records.reduce((sum, r) => sum + (r.indices?.dmft?.total || 0), 0) / (records.length || 1);
-      const ohisAvg = records.reduce((sum, r) => sum + (r.indices?.ohis?.total || 0), 0) / (records.length || 1);
+      const apiKey = process.env.GEMINI_API_KEY || '';
+      const ai = new GoogleGenAI({ apiKey });
       
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: `Analisis data kesehatan gigi berikut untuk populasi:
-        Jumlah Pasien: ${records.length}
-        Rata-rata DMF-T: ${dmftAvg.toFixed(2)}
-        Rata-rata OHI-S: ${ohisAvg.toFixed(2)}
-        
-        Berikan ringkasan eksekutif, tren kesehatan, dan rekomendasi tindakan preventif dalam format markdown yang profesional dan mudah dibaca.`,
+        model: "gemini-2.5-flash",
+        contents: `Anda adalah pakar Epidemiologi Kesehatan Gigi dan Mulut serta Dosen Pembimbing Asuhan Kesehatan Gigi dan Mulut (Askesgilut) PERMENKES RI No. 20/2016 di UPTD Puskesmas Kopo.
+Analisis data agregat asuhan kesehatan gigi dan mulut berikut:
+- Jumlah Pasien Askesgilut: ${records.length}
+- Status Higiene Mulut OHI-S Populasi: Rerata ${askesgilutStats.avgOhis} (DI-S: ${askesgilutStats.avgDi}, CI-S: ${askesgilutStats.avgCi})
+  * Kategori Baik: ${askesgilutStats.ohisBaik} pasien (${Math.round((askesgilutStats.ohisBaik/askesgilutStats.total)*100)}%)
+  * Kategori Sedang: ${askesgilutStats.ohisSedang} pasien (${Math.round((askesgilutStats.ohisSedang/askesgilutStats.total)*100)}%)
+  * Kategori Buruk: ${askesgilutStats.ohisBuruk} pasien (${Math.round((askesgilutStats.ohisBuruk/askesgilutStats.total)*100)}%)
+- Indeks Karies DMF-T Populasi: Rerata ${askesgilutStats.avgDmft}
+  * D (Karies Aktif): ${askesgilutStats.sumD}, M (Gigi Hilang): ${askesgilutStats.sumM}, F (Gigi Ditumpat): ${askesgilutStats.sumF}
+  * Care Index: ${askesgilutStats.careIndex}%, Bebas Karies: ${askesgilutStats.cariesFreePct}%
+- Rasio Tindakan Preventif-Promotif vs Kuratif: ${askesgilutStats.prevRatio}% Preventif
+- Diagnosis Human Needs Terbanyak: ${askesgilutStats.humanNeedsList.slice(0, 3).map(h => `${h.name} (${h.count} kasus)`).join(', ') || 'Integritas Jaringan Mukosa & Keutuhan Gigi'}
+
+Berikan:
+1. Ringkasan Eksekutif Epidemiologi Askesgilut (Status kesehatan gigi masyarakat Kopo)
+2. Analisis Kritis 5 Tahap Askesgilut (Pengkajian, Diagnosis Human Needs, Perencanaan, Tindakan, Evaluasi)
+3. Rekomendasi Program Prioritas Promotif & Preventif Puskesmas Kopo (UKGS Sekolah, Posyandu, Pelayanan Poli Gigi).
+Gunakan gaya bahasa profesional medis, terstruktur dengan subjudul markdown, ringkas, tajam, dan aplikatif.`,
       });
-      setAiAnalysis(response.text || "Gagal mendapatkan analisis.");
+      setAiAnalysis(response.text || "Gagal mendapatkan analisis asuhan.");
     } catch (error) {
       console.error("AI Analysis Error:", error);
-      setAiAnalysis("Terjadi kesalahan saat melakukan analisis AI.");
+      setAiAnalysis("Terjadi kendala saat menghubungkan ke mesin AI analisis asuhan. Silakan coba kembali sesaat lagi.");
     } finally {
       setIsAnalyzing(false);
     }
@@ -786,33 +976,48 @@ const Reports = () => {
       return (date.getMonth() + 1) === selectedMonth && date.getFullYear() === selectedYear;
     });
 
-    doc.setFontSize(18);
-    doc.text('Laporan Bulanan Detail Pelayanan Gigi', 14, 22);
-    doc.setFontSize(11);
-    doc.text(`Periode: ${selectedMonth}/${selectedYear} | SIGEMA KOPO`, 14, 30);
+    doc.setFontSize(16);
+    doc.setTextColor(15, 23, 42);
+    doc.text('Laporan Statistik Pelayanan Asuhan Kesehatan Gigi dan Mulut (Askesgilut)', 14, 18);
+    doc.setFontSize(10);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`UPTD Puskesmas Kopo · Periode: ${selectedMonth}/${selectedYear} · Standar Asuhan Permenkes No. 20/2016`, 14, 25);
 
     const tableData = filtered.map((r, index) => {
       const p = patients.find(pat => pat.id === r.patientId);
+      const ohisVal = r.indices?.ohis?.total || 0;
+      const ohisCat = r.indices?.ohis?.category || (ohisVal <= 1.2 ? 'Baik' : ohisVal <= 3.0 ? 'Sedang' : 'Buruk');
+      const dmft = r.indices?.dmft?.total || 0;
+      const diag = r.askesgilut?.diagnoses?.map((d: any) => d.kebutuhan).filter(Boolean).join(', ') || '-';
+      const actions = r.billing?.items?.map((i: any) => i.name).join(', ') || r.soapie?.intervention || '-';
+      const evalStatus = r.status === 'final' ? 'Tercapai (Final)' : 'Dalam Proses';
+
       return [
         index + 1,
         p?.rmNumber || r.patientId,
-        r.visitDate,
+        r.visitDate || '-',
         p?.name || 'Anonim',
-        formatAssessment(r)
+        `${ohisVal} (${ohisCat})`,
+        `D:${r.indices?.dmft?.d||0} M:${r.indices?.dmft?.m||0} F:${r.indices?.dmft?.f||0} (Tot:${dmft})`,
+        diag,
+        actions,
+        evalStatus
       ];
     });
 
     autoTable(doc, {
-      startY: 40,
-      head: [['No', 'No RM', 'Tanggal', 'Nama Pasien', 'Isi Seluruh Pengkajian']],
+      startY: 32,
+      head: [['No', 'No RM', 'Tanggal', 'Nama Pasien', 'OHI-S & Kriteria', 'Indeks DMF-T', 'Diagnosis Askesgilut', 'Tindakan Intervensi', 'Evaluasi']],
       body: tableData,
-      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [124, 58, 237], textColor: 255, fontStyle: 'bold', fontSize: 8 },
+      styles: { fontSize: 7, cellPadding: 2 },
       columnStyles: {
-        4: { cellWidth: 100 }
+        6: { cellWidth: 50 },
+        7: { cellWidth: 50 },
       }
     });
 
-    doc.save(`Laporan_Lengkap_${selectedMonth}_${selectedYear}.pdf`);
+    doc.save(`Laporan_Askesgilut_Kopo_${selectedMonth}_${selectedYear}.pdf`);
   };
 
   const exportExcel = () => {
@@ -823,226 +1028,883 @@ const Reports = () => {
 
     const worksheet = XLSX.utils.json_to_sheet(filtered.map((r, index) => {
       const p = patients.find(pat => pat.id === r.patientId);
+      const ohisVal = r.indices?.ohis?.total || 0;
+      const ohisCat = r.indices?.ohis?.category || (ohisVal <= 1.2 ? 'Baik' : ohisVal <= 3.0 ? 'Sedang' : 'Buruk');
+
       return {
         'No': index + 1,
         'No RM': p?.rmNumber || r.patientId,
-        'Tanggal Berobat': r.visitDate,
+        'Tanggal Pelayanan': r.visitDate,
         'Nama Pasien': p?.name || 'Anonim',
-        'Riwayat Medis': r.anamnesis?.medicalHistory?.isHealthy ? 'Sehat' : 'Bermasalah',
-        'Keluhan Utama': r.anamnesis?.anamnesis?.reason || '-',
-        'Indeks DMF-T': r.indices?.dmft?.total || 0,
-        'Indeks OHI-S': r.indices?.ohis?.total || 0,
-        'Kriteria OHI-S': r.indices?.ohis?.category || ((r.indices?.ohis?.total || 0) <= 1.2 ? 'Baik' : (r.indices?.ohis?.total || 0) <= 3.0 ? 'Sedang' : 'Buruk'),
-        'Diagnosis': r.askesgilut?.diagnoses?.map((d: any) => d.kebutuhan).join(', ') || '-',
-        'Rencana Perawatan': r.planning?.clientCenteredGoals || '-',
-        'Total Billing': r.billing?.total || 0
+        'Usia': p?.age ? `${p.age} th` : '-',
+        'Jenis Kelamin': p?.gender || '-',
+        'Riwayat Medis': r.anamnesis?.medicalHistory?.isHealthy ? 'Sehat' : 'Ada Riwayat',
+        'Keluhan Gigi': r.anamnesis?.dentalHistory?.reason || '-',
+        'Indeks Debris (DI-S)': r.indices?.ohis?.di || 0,
+        'Indeks Kalkulus (CI-S)': r.indices?.ohis?.ci || 0,
+        'Total OHI-S': ohisVal,
+        'Kriteria OHI-S': ohisCat,
+        'DMF-T (D)': r.indices?.dmft?.d || 0,
+        'DMF-T (M)': r.indices?.dmft?.m || 0,
+        'DMF-T (F)': r.indices?.dmft?.f || 0,
+        'Total DMF-T': r.indices?.dmft?.total || 0,
+        'def-t (Gigi Sulung)': r.indices?.deft?.total || 0,
+        'Diagnosis Askesgilut (Human Needs)': r.askesgilut?.diagnoses?.map((d: any) => d.kebutuhan).join('; ') || '-',
+        'Tindakan Intervensi': r.billing?.items?.map((i: any) => i.name).join(', ') || r.soapie?.intervention || '-',
+        'Status Evaluasi': r.status === 'final' ? 'Selesai / Tercapai' : 'Draf Pelayanan',
+        'Total Biaya': r.billing?.total || 0
       };
     }));
 
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Resitasi');
-    XLSX.writeFile(workbook, `Laporan_Bulanan_Lengkap_${selectedMonth}_${selectedYear}.xlsx`);
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Laporan Askesgilut');
+    XLSX.writeFile(workbook, `Laporan_Askesgilut_${selectedMonth}_${selectedYear}.xlsx`);
   };
 
   if (loading) {
     return (
-      <div className="p-8 flex items-center justify-center min-h-[400px]">
-        <RefreshCw className="animate-spin text-pink" size={48} />
+      <div className="p-12 flex items-center justify-center min-h-[400px]">
+        <RefreshCw className="animate-spin text-purple-600" size={40} />
       </div>
     );
   }
 
   return (
     <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">Statistik & Laporan Epidemiologi</h1>
-          <p className="text-xs text-slate-500 mt-0.5">Analisis agregat status kesehatan gigi dan mulut populasi UPTD Puskesmas Kopo.</p>
+      {/* Header Banner Askesgilut */}
+      <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-80 h-full bg-gradient-to-l from-purple-100/50 via-pink-50/30 to-transparent pointer-events-none"></div>
+        <div className="relative z-10 space-y-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-900 text-white shadow-xs">
+              <Award size={11} className="text-pink-400" /> SIGEMA KOPO
+            </span>
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-200">
+              <Stethoscope size={11} className="text-purple-600" /> Standar Askesgilut PERMENKES No. 20/2016
+            </span>
+            <span className="text-xs text-slate-400">•</span>
+            <span className="text-xs text-slate-500 font-medium">UPTD Puskesmas Kopo</span>
+          </div>
+          <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">
+            Statistik & Laporan Asuhan Kesehatan Gigi dan Mulut (Askesgilut)
+          </h1>
+          <p className="text-xs text-slate-500 max-w-3xl">
+            Sistem analisis agregat 5 pilar asuhan: Pengkajian Indeks Klinis (OHI-S & DMF-T), Diagnosis 8 Kebutuhan Manusia, Perencanaan, Tindakan Promotif-Preventif, serta Evaluasi Hasil Asuhan.
+          </p>
         </div>
-        <div className="flex gap-3">
+
+        <div className="flex items-center gap-3 relative z-10 shrink-0">
           <button 
             onClick={handleAIAnalysis}
             disabled={isAnalyzing}
-            className="flex items-center gap-2 px-4 py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-xs font-semibold shadow-sm shadow-sky-600/20 transition-all disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl text-xs font-semibold shadow-sm shadow-purple-600/25 transition-all disabled:opacity-50 active:scale-95"
           >
-            {isAnalyzing ? <RefreshCw className="animate-spin" size={15} /> : <Activity size={15} />}
-            {isAnalyzing ? 'Menganalisis Data...' : 'Analisis Epidemiologi AI'}
+            {isAnalyzing ? <RefreshCw className="animate-spin" size={15} /> : <Sparkles size={15} className="text-pink-200" />}
+            {isAnalyzing ? 'Menganalisis Askesgilut...' : 'Telaah Askesgilut AI'}
           </button>
         </div>
       </header>
 
-      {/* Monthly Report Controls */}
-      <div className="bg-white p-6 rounded-xl border border-slate-200/90 shadow-xs">
-        <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
-          <ClipboardList className="text-sky-600" size={18} />
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700">Filter & Ekspor Laporan Bulanan</h2>
-        </div>
-        
-        <div className="flex flex-col md:flex-row gap-4 items-end">
-          <div className="flex-1 space-y-1.5 w-full">
-            <label className="text-xs font-medium text-slate-700">Pilih Bulan Pelayanan</label>
-            <select 
-              value={selectedMonth}
-              onChange={e => setSelectedMonth(parseInt(e.target.value))}
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-sky-600 focus:ring-1 focus:ring-sky-600 rounded-lg text-xs font-medium transition-all"
+      {/* 5 Process of Care Interactive Navigation Tabs */}
+      <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto custom-scrollbar">
+        {[
+          { id: 'overview', label: '1. Ringkasan Siklus Askesgilut', icon: Layers, desc: '5 Pilar Asuhan' },
+          { id: 'assessment', label: '2. Pengkajian (OHI-S & DMF-T)', icon: ClipboardList, desc: 'Indeks Klinis' },
+          { id: 'diagnosis', label: '3. Diagnosis Kebutuhan Manusia', icon: HeartPulse, desc: '8 Human Needs' },
+          { id: 'interventions', label: '4. Tindakan & Evaluasi Asuhan', icon: Stethoscope, desc: 'Intervensi & Outcome' },
+          { id: 'monthly', label: '5. Rekap Bulanan & Ekspor', icon: FileText, desc: 'Cetak PDF / Excel' },
+        ].map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={cn(
+                "inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border",
+                isActive
+                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white border-transparent shadow-xs shadow-purple-600/20"
+                  : "bg-white text-slate-600 border-slate-200 hover:border-purple-300 hover:text-purple-700 hover:bg-purple-50/30"
+              )}
             >
-              {Array.from({length: 12}).map((_, i) => (
-                <option key={i+1} value={i+1}>{new Date(2000, i).toLocaleString('id-ID', {month: 'long'})}</option>
-              ))}
-            </select>
-          </div>
-          <div className="flex-1 space-y-1.5 w-full">
-            <label className="text-xs font-medium text-slate-700">Pilih Tahun</label>
-            <select 
-              value={selectedYear}
-              onChange={e => setSelectedYear(parseInt(e.target.value))}
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-sky-600 focus:ring-1 focus:ring-sky-600 rounded-lg text-xs font-medium transition-all"
-            >
-              {[2024, 2025, 2026].map(year => (
-                <option key={year} value={year}>{year}</option>
-              ))}
-            </select>
-          </div>
-          <div className="flex gap-2.5 w-full md:w-auto">
-            <button 
-              onClick={exportPDF}
-              className="flex-1 md:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold shadow-xs transition-all"
-            >
-              <Download size={15} /> Cetak PDF
+              <Icon size={14} className={isActive ? "text-white" : "text-purple-600"} />
+              <span>{tab.label}</span>
             </button>
-            <button 
-              onClick={exportExcel}
-              className="flex-1 md:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-xs transition-all"
-            >
-              <TrendingUp size={15} /> Ekspor Excel
-            </button>
-          </div>
-        </div>
+          );
+        })}
       </div>
 
-      {/* Summary KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {[
-          { label: 'Total Rekam Medis Keseluruhan', value: records.length.toLocaleString('id-ID'), badge: 'Kumulatif' },
-          { label: 'Kunjungan Bulan Terpilih', value: records.filter(r => (r.createdAt?.toDate ? r.createdAt.toDate().getMonth() : new Date(r.visitDate).getMonth()) === (selectedMonth - 1)).length.toString(), badge: 'Bulan Ini' },
-          { label: 'Total Billing & Kasir', value: `Rp ${records.reduce((acc, r) => acc + (r.billing?.total || 0), 0).toLocaleString('id-ID')}`, badge: 'Pendapatan' },
-        ].map((item, i) => (
-          <div key={i} className="bg-white p-5 rounded-xl border border-slate-200/90 shadow-xs flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-medium text-slate-500">{item.label}</p>
-              <span className="text-[10px] font-semibold text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-100">
-                {item.badge}
+      {/* AI Analysis Result Box */}
+      {aiAnalysis && (
+        <div className="bg-gradient-to-br from-purple-50/70 via-white to-pink-50/50 p-6 rounded-2xl border border-purple-200/80 shadow-xs relative">
+          <div className="flex items-center justify-between gap-3 mb-3 pb-3 border-b border-purple-100">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg shadow-2xs">
+                <Sparkles size={16} />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 tracking-tight">Telaah Klinis & Rekomendasi Askesgilut AI</h3>
+                <p className="text-[11px] text-slate-500">Analisis komprehensif epidemiologi pelayanan asuhan gigi Puskesmas Kopo</p>
+              </div>
+            </div>
+            <button 
+              onClick={() => setAiAnalysis(null)}
+              className="text-xs text-slate-400 hover:text-slate-600 font-medium px-2 py-1 rounded-md hover:bg-purple-100/50"
+            >
+              Tutup
+            </button>
+          </div>
+          <div className="prose prose-sm max-w-none text-slate-700 text-xs leading-relaxed custom-scrollbar max-h-80 overflow-y-auto space-y-2">
+            {aiAnalysis.split('\n').map((line, i) => (
+              <p key={i} className="mb-1">{line}</p>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 1: OVERVIEW (RINGKASAN SIKLUS ASKESGILUT) */}
+      {activeTab === 'overview' && (
+        <div className="space-y-6">
+          {/* 5 Process of Care KPI Summary Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+            {[
+              {
+                step: '1. Pengkajian',
+                title: 'Rata-rata OHI-S',
+                value: askesgilutStats.avgOhis.toString(),
+                sub: `Baik: ${askesgilutStats.ohisBaik} | Sedang: ${askesgilutStats.ohisSedang} | Buruk: ${askesgilutStats.ohisBuruk}`,
+                badge: askesgilutStats.avgOhis <= 1.2 ? 'Baik' : askesgilutStats.avgOhis <= 3.0 ? 'Sedang' : 'Buruk',
+                badgeColor: askesgilutStats.avgOhis <= 1.2 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : askesgilutStats.avgOhis <= 3.0 ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-rose-50 text-rose-700 border-rose-200',
+                icon: ClipboardList
+              },
+              {
+                step: '1. Karies',
+                title: 'Rerata DMF-T',
+                value: askesgilutStats.avgDmft.toString(),
+                sub: `D:${askesgilutStats.sumD} · M:${askesgilutStats.sumM} · F:${askesgilutStats.sumF}`,
+                badge: `Care: ${askesgilutStats.careIndex}%`,
+                badgeColor: 'bg-purple-50 text-purple-700 border-purple-200',
+                icon: Award
+              },
+              {
+                step: '2. Diagnosis',
+                title: 'Human Needs',
+                value: askesgilutStats.humanNeedsList.reduce((sum, h) => sum + h.count, 0).toString(),
+                sub: `${askesgilutStats.humanNeedsList.length} kategori kebutuhan teridentifikasi`,
+                badge: '8 Model',
+                badgeColor: 'bg-pink-50 text-pink-700 border-pink-200',
+                icon: HeartPulse
+              },
+              {
+                step: '4. Intervensi',
+                title: 'Rasio Preventif',
+                value: `${askesgilutStats.prevRatio}%`,
+                sub: `Utamakan Scaling, DHE, TAF & Sealant`,
+                badge: 'Puskesmas',
+                badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                icon: Stethoscope
+              },
+              {
+                step: '5. Evaluasi',
+                title: 'Keberhasilan Asuhan',
+                value: `${Math.round(((askesgilutStats.ohisBaik + askesgilutStats.ohisSedang) / askesgilutStats.total) * 100)}%`,
+                sub: `${askesgilutStats.completedAskes} rekam asuhan terselesaikan final`,
+                badge: 'Tercapai',
+                badgeColor: 'bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 border-purple-200',
+                icon: CheckCircle2
+              },
+            ].map((kpi, idx) => {
+              const Icon = kpi.icon;
+              return (
+                <div key={idx} className="bg-white p-4 rounded-xl border border-slate-200/90 shadow-xs flex flex-col justify-between hover:border-purple-300 transition-colors">
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[10px] font-bold text-purple-700 uppercase tracking-wider">{kpi.step}</span>
+                      <span className={cn("text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded border", kpi.badgeColor)}>
+                        {kpi.badge}
+                      </span>
+                    </div>
+                    <p className="text-xs font-semibold text-slate-700">{kpi.title}</p>
+                    <p className="text-2xl font-black text-slate-900 tracking-tight mt-1 font-mono">{kpi.value}</p>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-2.5 pt-2 border-t border-slate-100 line-clamp-1">{kpi.sub}</p>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Interactive Flow Chart of Askesgilut Process */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5 pb-3 border-b border-slate-100">
+              <div>
+                <h2 className="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                  <Layers size={16} className="text-purple-600" />
+                  Alur Siklus Asuhan Kesehatan Gigi dan Mulut (Dental Hygiene Process of Care)
+                </h2>
+                <p className="text-xs text-slate-500">Kerangka kerja klinis berstandar PERMENKES RI No. 20/2016 di Poli Gigi Puskesmas Kopo</p>
+              </div>
+              <span className="text-xs font-semibold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-200 w-fit">
+                Total Pasien Terkaji: {records.length}
               </span>
             </div>
-            <p className="text-2xl font-bold text-slate-900 tracking-tight mt-2 font-mono tabular-nums">{item.value}</p>
-          </div>
-        ))}
-      </div>
 
-      {/* Charts & AI Analysis Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-xl border border-slate-200/90 shadow-xs">
-          <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
-            <div>
-              <h2 className="text-sm font-bold text-slate-900 tracking-tight">Tren Indikator Kesehatan Gigi (WHO)</h2>
-              <p className="text-xs text-slate-500">DMF-T (Karies Gigi) vs OHI-S (Indeks Higiene Mulut)</p>
-            </div>
-            <div className="flex items-center gap-3 text-xs">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-xs bg-slate-900"></span>
-                <span className="text-slate-600 font-medium">DMF-T</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-xs bg-sky-600"></span>
-                <span className="text-slate-600 font-medium">OHI-S</span>
-              </div>
-            </div>
-          </div>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} />
-                <Tooltip 
-                  contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', fontSize: '12px' }}
-                />
-                <Line type="monotone" dataKey="dmft" stroke="#0f172a" strokeWidth={2.5} dot={{ r: 4, fill: '#0f172a', strokeWidth: 1.5, stroke: '#fff' }} activeDot={{ r: 6 }} name="DMF-T" />
-                <Line type="monotone" dataKey="ohis" stroke="#0284c7" strokeWidth={2.5} dot={{ r: 4, fill: '#0284c7', strokeWidth: 1.5, stroke: '#fff' }} activeDot={{ r: 6 }} name="OHI-S" />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl border border-slate-200/90 shadow-xs flex flex-col">
-          <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
-            <Activity className="text-sky-600" size={18} />
-            <h2 className="text-sm font-bold text-slate-900 tracking-tight">Telaah Klinis & Rekomendasi AI</h2>
-          </div>
-          {aiAnalysis ? (
-            <div className="prose prose-sm max-w-none text-slate-700 font-normal leading-relaxed overflow-y-auto max-h-72 custom-scrollbar text-xs">
-              {aiAnalysis.split('\n').map((line, i) => (
-                <p key={i} className="mb-1.5">{line}</p>
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3 relative">
+              {[
+                {
+                  step: 'Tahap 1',
+                  name: 'Pengkajian',
+                  sub: 'Assessment',
+                  color: 'from-purple-600 to-indigo-600',
+                  items: ['Anamnesis Riwayat Medis', `OHI-S (Rata ${askesgilutStats.avgOhis})`, `DMF-T (Rata ${askesgilutStats.avgDmft})`, 'Plaque Control Record (PCR)']
+                },
+                {
+                  step: 'Tahap 2',
+                  name: 'Diagnosis',
+                  sub: 'Human Needs',
+                  color: 'from-indigo-600 to-purple-600',
+                  items: ['8 Kebutuhan Manusia', 'Etiologi Masalah Plak/Karies', 'Tanda & Gejala Klinis', `${askesgilutStats.humanNeedsList.length} Variasi Diagnosis`]
+                },
+                {
+                  step: 'Tahap 3',
+                  name: 'Perencanaan',
+                  sub: 'Planning',
+                  color: 'from-purple-600 to-pink-600',
+                  items: ['Client-Centered Goals', 'Rencana Promotif DHE', 'Rencana Preventif Scaling', 'Informed Consent Pasien']
+                },
+                {
+                  step: 'Tahap 4',
+                  name: 'Implementasi',
+                  sub: 'Intervention',
+                  color: 'from-pink-600 to-rose-600',
+                  items: ['Scaling Supra/Subgingiva', 'Instruksi Sikat Gigi Roll/Bass', 'Topikal Fluor (TAF)', 'Restorasi ART & Tumpatan GIC']
+                },
+                {
+                  step: 'Tahap 5',
+                  name: 'Evaluasi',
+                  sub: 'Evaluation',
+                  color: 'from-rose-600 to-emerald-600',
+                  items: [`Penurunan Skor OHI-S`, `Care Index: ${askesgilutStats.careIndex}%`, `${askesgilutStats.completedAskes} Selesai Final`, 'Penjadwalan Kunjungan Ulang']
+                },
+              ].map((stage, i) => (
+                <div key={i} className="bg-slate-50/70 p-4 rounded-xl border border-slate-200/80 flex flex-col justify-between hover:bg-purple-50/30 transition-all">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-mono font-bold text-slate-400 uppercase">{stage.step}</span>
+                      <span className="w-2 h-2 rounded-full bg-gradient-to-r from-purple-500 to-pink-500"></span>
+                    </div>
+                    <h3 className="text-sm font-bold text-slate-900">{stage.name}</h3>
+                    <p className="text-[10px] font-semibold text-purple-600 uppercase tracking-wider mb-3">{stage.sub}</p>
+                    <ul className="space-y-1.5">
+                      {stage.items.map((it, idx) => (
+                        <li key={idx} className="text-[11px] text-slate-600 flex items-center gap-1.5">
+                          <Check size={11} className="text-emerald-500 shrink-0" />
+                          <span className="truncate">{it}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
               ))}
             </div>
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-center p-8 text-slate-400">
-              <Activity size={32} className="text-slate-300 mb-2" />
-              <p className="text-xs font-medium">Klik tombol &quot;Analisis Epidemiologi AI&quot; di atas untuk menghasilkan telaah otomatis berbasis data populasi.</p>
+          </div>
+
+          {/* Tren 6 Bulan Askesgilut & Sebaran Human Needs */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-100">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 tracking-tight">Tren Indikator Kesehatan Gigi 6 Bulan Terakhir</h3>
+                  <p className="text-xs text-slate-500">Perkembangan rerata DMF-T (Karies) vs OHI-S (Higiene Mulut) vs Rasio Tindakan Preventif</p>
+                </div>
+                <div className="flex items-center gap-3 text-xs flex-wrap">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-purple-600"></span>
+                    <span className="text-slate-600 font-medium">DMF-T</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-pink-500"></span>
+                    <span className="text-slate-600 font-medium">OHI-S</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                    <span className="text-slate-600 font-medium">% Preventif</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData} margin={{ top: 10, right: 15, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} />
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '10px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', fontSize: '12px' }}
+                    />
+                    <Line type="monotone" dataKey="dmft" stroke="#7c3aed" strokeWidth={2.5} dot={{ r: 4, fill: '#7c3aed', strokeWidth: 1.5, stroke: '#fff' }} activeDot={{ r: 6 }} name="DMF-T" />
+                    <Line type="monotone" dataKey="ohis" stroke="#ec4899" strokeWidth={2.5} dot={{ r: 4, fill: '#ec4899', strokeWidth: 1.5, stroke: '#fff' }} activeDot={{ r: 6 }} name="OHI-S" />
+                    <Line type="monotone" dataKey="preventiveRate" stroke="#10b981" strokeWidth={2} strokeDasharray="4 4" dot={{ r: 3, fill: '#10b981' }} name="% Tindakan Preventif" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-[11px] text-slate-500">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-slate-700">Target Puskesmas:</span>
+                  <span>OHI-S &le; 1.2 (Baik) · DMF-T &le; 3.0 · Preventif &gt; 70%</span>
+                </div>
+                <div className="font-mono font-semibold text-purple-700">Periode Evaluasi Terkini</div>
+              </div>
             </div>
-          )}
-        </div>
-      </div>
 
-      {/* Preview Table */}
-      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
-        <div className="p-5 border-b border-slate-200/80">
-          <h2 className="text-sm font-bold text-slate-900 tracking-tight">Pratinjau Data Kunjungan Terperinci</h2>
-          <p className="text-xs text-slate-500">Rekap data periode {selectedMonth}/{selectedYear}</p>
-        </div>
+            {/* Quick Human Needs Mini Card */}
+            <div className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col justify-between">
+              <div>
+                <div className="mb-4 pb-3 border-b border-slate-100">
+                  <h3 className="text-sm font-bold text-slate-900 tracking-tight">Diagnosis Kebutuhan Terbanyak</h3>
+                  <p className="text-xs text-slate-500">Human Needs Model (Askesgilut)</p>
+                </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="bg-slate-50/80 text-slate-500 font-semibold border-b border-slate-200">
-                <th className="px-5 py-3 w-12 text-center">No</th>
-                <th className="px-5 py-3">No RM</th>
-                <th className="px-5 py-3">Tanggal</th>
-                <th className="px-5 py-3">Nama Pasien</th>
-                <th className="px-5 py-3">Ringkasan Pengkajian & Diagnosis</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {records.filter(r => {
-                const date = r.createdAt?.toDate ? r.createdAt.toDate() : new Date(r.visitDate);
-                return (date.getMonth() + 1) === selectedMonth && date.getFullYear() === selectedYear;
-              }).map((record, i) => {
-                const p = patients.find(pat => pat.id === record.patientId);
-                return (
-                  <tr key={record.id} className="hover:bg-slate-50/60 transition-colors">
-                    <td className="px-5 py-3 text-center text-slate-400 font-mono">{i + 1}</td>
-                    <td className="px-5 py-3 font-mono font-medium text-slate-800">
-                      {p?.rmNumber || 'N/A'}
-                    </td>
-                    <td className="px-5 py-3 text-slate-600 font-medium">{record.visitDate}</td>
-                    <td className="px-5 py-3 font-semibold text-slate-900">{p?.name || 'Anonim'}</td>
-                    <td className="px-5 py-3 text-slate-600 max-w-md">
-                      {formatAssessment(record)}
-                    </td>
+                <div className="space-y-3">
+                  {askesgilutStats.humanNeedsList.slice(0, 5).map((diag, i) => {
+                    const pct = Math.round((diag.count / (askesgilutStats.humanNeedsList.reduce((s, h) => s + h.count, 0) || 1)) * 100);
+                    return (
+                      <div key={i} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-medium text-slate-700 truncate max-w-[200px]" title={diag.name}>
+                            {diag.name}
+                          </span>
+                          <span className="font-mono font-bold text-purple-700 shrink-0">{diag.count} ({pct}%)</span>
+                        </div>
+                        <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                          <div 
+                            className="bg-gradient-to-r from-purple-600 to-pink-500 h-full rounded-full" 
+                            style={{ width: `${Math.min(100, pct * 1.5)}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {askesgilutStats.humanNeedsList.length === 0 && (
+                    <p className="text-xs text-slate-400 italic py-6 text-center">Belum ada diagnosis asuhan yang tercatat.</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-slate-100">
+                <button 
+                  onClick={() => setActiveTab('diagnosis')}
+                  className="w-full py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5"
+                >
+                  Lihat Analisis 8 Kebutuhan Lengkap <ArrowRight size={13} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 2: PENGKAJIAN (OHI-S & DMF-T KRITERIA) */}
+      {activeTab === 'assessment' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* OHI-S Distribution Donut Chart */}
+            <div className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs">
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 tracking-tight">Distribusi Kriteria OHI-S Populasi (WHO)</h3>
+                  <p className="text-xs text-slate-500">Tingkat Kebersihan Gigi & Mulut (Debris + Calculus)</p>
+                </div>
+                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">
+                  Rerata: {askesgilutStats.avgOhis}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 items-center gap-4">
+                <div className="h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={askesgilutStats.ohisPie}
+                        innerRadius={55}
+                        outerRadius={75}
+                        paddingAngle={4}
+                        dataKey="value"
+                      >
+                        {askesgilutStats.ohisPie.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} stroke="#fff" strokeWidth={2} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div className="space-y-2.5">
+                  {askesgilutStats.ohisPie.map((entry, idx) => (
+                    <div key={idx} className="p-2.5 rounded-xl border border-slate-100 hover:bg-slate-50 transition-colors">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <span className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }}></span>
+                          <span className="text-xs font-bold text-slate-800">{entry.name}</span>
+                        </div>
+                        <span className="font-mono font-bold text-xs" style={{ color: entry.color }}>
+                          {entry.pct}%
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-500 pl-5">
+                        {entry.count} dari {askesgilutStats.total} pasien terkaji
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Sub-indices Breakdown */}
+              <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-2 gap-4 text-center">
+                <div className="p-3 bg-purple-50/50 rounded-xl border border-purple-100">
+                  <p className="text-[10px] font-bold text-purple-600 uppercase tracking-wider">Rata-rata Debris Index (DI-S)</p>
+                  <p className="text-xl font-black text-slate-900 mt-0.5 font-mono">{askesgilutStats.avgDi}</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">Endapan lunak / plak makanan</p>
+                </div>
+                <div className="p-3 bg-pink-50/50 rounded-xl border border-pink-100">
+                  <p className="text-[10px] font-bold text-pink-600 uppercase tracking-wider">Rata-rata Calculus Index (CI-S)</p>
+                  <p className="text-xl font-black text-slate-900 mt-0.5 font-mono">{askesgilutStats.avgCi}</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">Endapan keras / karang gigi</p>
+                </div>
+              </div>
+            </div>
+
+            {/* DMF-T & def-t Breakdown Chart */}
+            <div className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 tracking-tight">Komposisi Pengkajian Karies (DMF-T & def-t)</h3>
+                    <p className="text-xs text-slate-500">Evaluasi Gigi Berlubang (D), Hilang (M), dan Ditumpat (F)</p>
+                  </div>
+                  <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    Bebas Karies: {askesgilutStats.cariesFreePct}%
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3 mb-5">
+                  <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl text-center">
+                    <p className="text-[10px] font-bold text-rose-700 uppercase">D (Decayed)</p>
+                    <p className="text-2xl font-black text-rose-700 mt-1 font-mono">{askesgilutStats.sumD}</p>
+                    <p className="text-[9px] text-rose-600 font-medium">Karies Aktif</p>
+                  </div>
+                  <div className="p-3 bg-amber-50 border border-amber-100 rounded-xl text-center">
+                    <p className="text-[10px] font-bold text-amber-700 uppercase">M (Missing)</p>
+                    <p className="text-2xl font-black text-amber-700 mt-1 font-mono">{askesgilutStats.sumM}</p>
+                    <p className="text-[9px] text-amber-600 font-medium">Gigi Dicabut</p>
+                  </div>
+                  <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl text-center">
+                    <p className="text-[10px] font-bold text-emerald-700 uppercase">F (Filled)</p>
+                    <p className="text-2xl font-black text-emerald-700 mt-1 font-mono">{askesgilutStats.sumF}</p>
+                    <p className="text-[9px] text-emerald-600 font-medium">Sudah Ditumpat</p>
+                  </div>
+                </div>
+
+                {/* Progress bar of D M F composition */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-slate-700">Rasio Komposisi Karies:</span>
+                    <span className="font-mono text-slate-500 font-medium">Total Elemen: {askesgilutStats.sumD + askesgilutStats.sumM + askesgilutStats.sumF} gigi</span>
+                  </div>
+                  {(() => {
+                    const tot = (askesgilutStats.sumD + askesgilutStats.sumM + askesgilutStats.sumF) || 1;
+                    const dPct = Math.round((askesgilutStats.sumD / tot) * 100);
+                    const mPct = Math.round((askesgilutStats.sumM / tot) * 100);
+                    const fPct = 100 - dPct - mPct;
+                    return (
+                      <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden flex">
+                        <div style={{ width: `${dPct}%` }} className="bg-rose-500 h-full" title={`D: ${dPct}%`}></div>
+                        <div style={{ width: `${mPct}%` }} className="bg-amber-400 h-full" title={`M: ${mPct}%`}></div>
+                        <div style={{ width: `${Math.max(0, fPct)}%` }} className="bg-emerald-500 h-full" title={`F: ${fPct}%`}></div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              <div className="mt-5 pt-4 border-t border-slate-100 bg-slate-50/70 p-3.5 rounded-xl border border-slate-200/80">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-slate-800">Care Index (Tingkat Penanganan Restorasi):</span>
+                  <span className="font-mono font-bold text-purple-700 text-sm">{askesgilutStats.careIndex}%</span>
+                </div>
+                <p className="text-[11px] text-slate-500 mt-1">
+                  Persentase gigi berlubang yang telah mendapatkan perawatan tumpatan definitif (Target Puskesmas: &gt; 50%).
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: DIAGNOSIS (8 KEBUTUHAN MANUSIA / HUMAN NEEDS MODEL) */}
+      {activeTab === 'diagnosis' && (
+        <div className="space-y-6">
+          <div className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                  <HeartPulse size={16} className="text-pink-600" />
+                  Sebaran Diagnosis Askesgilut Berdasarkan 8 Kebutuhan Manusia (Human Needs Model)
+                </h3>
+                <p className="text-xs text-slate-500">Standar nomenklatur asuhan kesehatan gigi dan mulut nasional</p>
+              </div>
+              <span className="text-xs font-semibold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-200">
+                Total Diagnosis Tercatat: {askesgilutStats.humanNeedsList.reduce((s, h) => s + h.count, 0)} Kasus
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Left: Bar representation of all 8 needs */}
+              <div className="space-y-3.5">
+                {[
+                  {
+                    need: 'Integritas Jaringan Kulit & Mukosa Mulut',
+                    desc: 'Gingivitis, perdarahan saat sikat gigi, karang gigi supra/subgingiva, poket periodontal',
+                    color: '#7c3aed'
+                  },
+                  {
+                    need: 'Keutuhan & Fungsi Biologis Gigi',
+                    desc: 'Karies gigi aktif (email/dentin), kehilangan gigi, abrasi gigi, atrisi',
+                    color: '#ec4899'
+                  },
+                  {
+                    need: 'Tanggung Jawab atas Kesehatan Gigi Sendiri',
+                    desc: 'Kebiasaan menyikat gigi yang kurang tepat, waktu sikat gigi tidak sesuai, penumpukan debris',
+                    color: '#0f172a'
+                  },
+                  {
+                    need: 'Bebas dari Rasa Nyeri/Sakit pada Leher & Kepala',
+                    desc: 'Nyeri spontan gigi, ngilu pada rangsang dingin/manis, nyeri tekan gingiva',
+                    color: '#f43f5e'
+                  },
+                  {
+                    need: 'Perlindungan dari Risiko Kesehatan',
+                    desc: 'Riwayat penyakit sistemik (diabetes, hipertensi, asma), alergi obat/bahan dental',
+                    color: '#f59e0b'
+                  },
+                  {
+                    need: 'Bebas dari Kecemasan & Stres Dental',
+                    desc: 'Rasa takut terhadap instrumen dental, kecemasan terhadap tindakan scaling/tumpat',
+                    color: '#06b6d4'
+                  },
+                  {
+                    need: 'Konsep Diri & Citra Wajah/Gigi',
+                    desc: 'Keluhan estetika karena perubahan warna gigi (stain nikotin/kopi), gigi berjejal',
+                    color: '#8b5cf6'
+                  },
+                  {
+                    need: 'Pemahaman Konseptual & Pemecahan Masalah',
+                    desc: 'Kurangnya informasi tentang proses terjadinya karies dan penyakit periodontal',
+                    color: '#10b981'
+                  },
+                ].map((item, idx) => {
+                  const match = askesgilutStats.humanNeedsList.find(h => 
+                    h.name.toLowerCase().includes(item.need.toLowerCase().substring(0, 15))
+                  );
+                  const count = match ? match.count : 0;
+                  const totalCount = askesgilutStats.humanNeedsList.reduce((s, h) => s + h.count, 0) || 1;
+                  const pct = Math.round((count / totalCount) * 100);
+
+                  return (
+                    <div key={idx} className="p-3 bg-slate-50/70 rounded-xl border border-slate-100 hover:border-purple-200 transition-colors">
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></span>
+                          {item.need}
+                        </span>
+                        <span className="font-mono font-bold text-purple-700">{count} kasus ({pct}%)</span>
+                      </div>
+                      <p className="text-[10px] text-slate-500 mb-1.5">{item.desc}</p>
+                      <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full rounded-full transition-all duration-500" 
+                          style={{ width: `${Math.min(100, Math.max(count > 0 ? 5 : 0, pct * 2))}%`, backgroundColor: item.color }}
+                        ></div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Right: Clinical Diagnostic Guide */}
+              <div className="space-y-4">
+                <div className="bg-gradient-to-br from-purple-50/60 to-pink-50/40 p-5 rounded-xl border border-purple-200/80">
+                  <h4 className="text-xs font-bold text-purple-900 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <Info size={14} className="text-purple-600" /> Prinsip Diagnosis Askesgilut (PES Format)
+                  </h4>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Diagnosis asuhan kesehatan gigi dirumuskan dalam format <span className="font-bold text-purple-800">PES</span>:
+                  </p>
+                  <ul className="mt-2 space-y-1.5 text-xs text-slate-600">
+                    <li className="flex items-start gap-1.5">
+                      <span className="font-bold text-purple-700 shrink-0">P (Problem):</span>
+                      <span>Kebutuhan manusia yang belum terpenuhi (Unmet Human Needs)</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="font-bold text-purple-700 shrink-0">E (Etiology):</span>
+                      <span>Penyebab spesifik seperti penumpukan plak, kalkulus supra/subgingiva, konsumsi sukrosa berlebih</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="font-bold text-purple-700 shrink-0">S (Signs & Symptoms):</span>
+                      <span>Tanda klinis objektif seperti skor OHI-S &gt; 1.2, gingiva bengkak kemerahan, perdarahan BOP</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="bg-white p-5 rounded-xl border border-slate-200/90 shadow-2xs">
+                  <h4 className="text-xs font-bold text-slate-800 mb-2">Integrasi dengan Rencana Perawatan (Planning)</h4>
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    Setiap diagnosis kebutuhan manusia secara langsung memandu penetapan <span className="font-semibold text-slate-700">Client-Centered Goals</span> dan intervensi promotif/preventif yang disepakati melalui Informed Consent.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: TINDAKAN & EVALUASI ASUHAN */}
+      {activeTab === 'interventions' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Interventions Frequency Chart */}
+            <div className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs">
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 tracking-tight">Rekapitulasi Tindakan Pelayanan Askesgilut</h3>
+                  <p className="text-xs text-slate-500">Frekuensi intervensi klinis preventif, promotif, dan kuratif</p>
+                </div>
+                <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  {askesgilutStats.prevRatio}% Preventif
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {askesgilutStats.interventionsList.map((item, idx) => {
+                  const maxCount = Math.max(...askesgilutStats.interventionsList.map(i => i.count), 1);
+                  const barWidth = Math.round((item.count / maxCount) * 100);
+                  const isPreventive = /skeling|dhe|fluor|sealant/i.test(item.name);
+
+                  return (
+                    <div key={idx} className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-semibold text-slate-800 flex items-center gap-1.5">
+                          <span className={cn("w-2 h-2 rounded-full", isPreventive ? "bg-emerald-500" : "bg-purple-600")}></span>
+                          {item.name}
+                        </span>
+                        <span className="font-mono font-bold text-slate-700">{item.count} tindakan</span>
+                      </div>
+                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                        <div 
+                          className={cn("h-full rounded-full transition-all duration-500", isPreventive ? "bg-gradient-to-r from-emerald-500 to-teal-500" : "bg-gradient-to-r from-purple-600 to-pink-500")} 
+                          style={{ width: `${Math.max(5, barWidth)}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> Promotif / Preventif</span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-purple-600"></span> Kuratif Sederhana</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Evaluation & Outcome Metrics */}
+            <div className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 tracking-tight">Evaluasi Keberhasilan Askesgilut</h3>
+                    <p className="text-xs text-slate-500">Hasil luaran klinis asuhan gigi dan kepatuhan kontrol</p>
+                  </div>
+                  <span className="text-xs font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
+                    Outcome Based
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="p-3.5 bg-emerald-50/70 border border-emerald-100 rounded-xl">
+                    <p className="text-[10px] font-bold text-emerald-700 uppercase">Higiene Membaik (Baik/Sedang)</p>
+                    <p className="text-2xl font-black text-emerald-700 mt-1 font-mono">
+                      {Math.round(((askesgilutStats.ohisBaik + askesgilutStats.ohisSedang) / askesgilutStats.total) * 100)}%
+                    </p>
+                    <p className="text-[10px] text-emerald-600 font-medium mt-0.5">{askesgilutStats.ohisBaik + askesgilutStats.ohisSedang} pasien mencapai standar</p>
+                  </div>
+
+                  <div className="p-3.5 bg-purple-50/70 border border-purple-100 rounded-xl">
+                    <p className="text-[10px] font-bold text-purple-700 uppercase">Rekam Asuhan Selesai (Final)</p>
+                    <p className="text-2xl font-black text-purple-700 mt-1 font-mono">
+                      {askesgilutStats.completedAskes}
+                    </p>
+                    <p className="text-[10px] text-purple-600 font-medium mt-0.5">dari {askesgilutStats.total} total kunjungan</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 text-xs border border-slate-100">
+                    <span className="text-slate-600 font-medium">Jadwal Kontrol Ulang Terjadwal:</span>
+                    <span className="font-mono font-bold text-slate-800">{askesgilutStats.controlledVisits} pasien</span>
+                  </div>
+                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 text-xs border border-slate-100">
+                    <span className="text-slate-600 font-medium">Indikator Pasien Bebas Karies (Caries Free):</span>
+                    <span className="font-mono font-bold text-emerald-600">{askesgilutStats.cariesFreePct}%</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-5 pt-4 border-t border-slate-100 bg-purple-50/40 p-3 rounded-xl border border-purple-100">
+                <p className="text-[11px] text-purple-900 leading-relaxed">
+                  <span className="font-bold">Standar Evaluasi:</span> Evaluasi dilakukan setelah tindakan dengan mengukur ulang indeks kebersihan mulut (OHI-S / PCR) dan memastikan tercapainya kemandirian pemeliharaan kesehatan gigi pasien di rumah.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 5: REKAP BULANAN & EKSPOR (MONTHLY & EXPORT) */}
+      {activeTab === 'monthly' && (
+        <div className="space-y-6">
+          {/* Monthly Report Controls */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs">
+            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
+              <ClipboardList className="text-purple-600" size={18} />
+              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700">Filter & Ekspor Rekapitulasi Askesgilut Bulanan</h2>
+            </div>
+            
+            <div className="flex flex-col md:flex-row gap-4 items-end">
+              <div className="flex-1 space-y-1.5 w-full">
+                <label className="text-xs font-medium text-slate-700">Pilih Bulan Pelayanan</label>
+                <select 
+                  value={selectedMonth}
+                  onChange={e => setSelectedMonth(parseInt(e.target.value))}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-purple-600 focus:ring-1 focus:ring-purple-600 rounded-lg text-xs font-medium transition-all"
+                >
+                  {Array.from({length: 12}).map((_, i) => (
+                    <option key={i+1} value={i+1}>{new Date(2000, i).toLocaleString('id-ID', {month: 'long'})}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex-1 space-y-1.5 w-full">
+                <label className="text-xs font-medium text-slate-700">Pilih Tahun</label>
+                <select 
+                  value={selectedYear}
+                  onChange={e => setSelectedYear(parseInt(e.target.value))}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-purple-600 focus:ring-1 focus:ring-purple-600 rounded-lg text-xs font-medium transition-all"
+                >
+                  {[2024, 2025, 2026, 2027].map(year => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex gap-2.5 w-full md:w-auto">
+                <button 
+                  onClick={exportPDF}
+                  className="flex-1 md:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold shadow-xs transition-all"
+                >
+                  <Download size={15} /> Cetak PDF Askesgilut
+                </button>
+                <button 
+                  onClick={exportExcel}
+                  className="flex-1 md:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-lg text-xs font-semibold shadow-xs transition-all"
+                >
+                  <TrendingUp size={15} /> Ekspor Excel Askesgilut
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Preview Table */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+            <div className="p-5 border-b border-slate-200/80 flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-bold text-slate-900 tracking-tight">Pratinjau Data Askesgilut Terperinci</h2>
+                <p className="text-xs text-slate-500">Rekap data periode {selectedMonth}/{selectedYear} UPTD Puskesmas Kopo</p>
+              </div>
+              <span className="text-xs font-mono font-semibold text-slate-500">
+                {records.filter(r => {
+                  const date = r.createdAt?.toDate ? r.createdAt.toDate() : new Date(r.visitDate);
+                  return (date.getMonth() + 1) === selectedMonth && date.getFullYear() === selectedYear;
+                }).length} pasien pada periode ini
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/80 text-slate-500 font-semibold border-b border-slate-200">
+                    <th className="px-5 py-3 w-12 text-center">No</th>
+                    <th className="px-5 py-3">No RM</th>
+                    <th className="px-5 py-3">Tanggal</th>
+                    <th className="px-5 py-3">Nama Pasien</th>
+                    <th className="px-5 py-3">OHI-S & Kriteria</th>
+                    <th className="px-5 py-3">DMF-T</th>
+                    <th className="px-5 py-3">Ringkasan Pengkajian & Diagnosis Askesgilut</th>
                   </tr>
-                );
-              })}
-              {records.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="py-12 text-center text-slate-400 text-xs">
-                    Belum ada data kunjungan pada periode ini.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {records.filter(r => {
+                    const date = r.createdAt?.toDate ? r.createdAt.toDate() : new Date(r.visitDate);
+                    return (date.getMonth() + 1) === selectedMonth && date.getFullYear() === selectedYear;
+                  }).map((record, i) => {
+                    const p = patients.find(pat => pat.id === record.patientId);
+                    const ohisVal = record.indices?.ohis?.total || 0;
+                    const ohisCat = record.indices?.ohis?.category || (ohisVal <= 1.2 ? 'Baik' : ohisVal <= 3.0 ? 'Sedang' : 'Buruk');
+                    const badgeColor = ohisVal <= 1.2 
+                      ? 'text-emerald-700 bg-emerald-50 border-emerald-200' 
+                      : ohisVal <= 3.0 
+                        ? 'text-amber-700 bg-amber-50 border-amber-200' 
+                        : 'text-rose-700 bg-rose-50 border-rose-200';
+
+                    return (
+                      <tr key={record.id} className="hover:bg-purple-50/30 transition-colors">
+                        <td className="px-5 py-3 text-center text-slate-400 font-mono">{i + 1}</td>
+                        <td className="px-5 py-3 font-mono font-medium text-slate-800">
+                          {p?.rmNumber || 'N/A'}
+                        </td>
+                        <td className="px-5 py-3 text-slate-600 font-medium">{record.visitDate || '-'}</td>
+                        <td className="px-5 py-3 font-semibold text-slate-900">{p?.name || 'Anonim'}</td>
+                        <td className="px-5 py-3">
+                          <span className={cn("px-2 py-0.5 rounded text-[11px] font-bold border inline-flex items-center gap-1", badgeColor)}>
+                            <span>{ohisVal}</span>
+                            <span className="text-[9px] uppercase font-sans">({ohisCat})</span>
+                          </span>
+                        </td>
+                        <td className="px-5 py-3 font-mono font-medium text-purple-700">
+                          {record.indices?.dmft?.total || 0}
+                        </td>
+                        <td className="px-5 py-3 text-slate-600 max-w-md">
+                          {formatAssessment(record)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {records.filter(r => {
+                    const date = r.createdAt?.toDate ? r.createdAt.toDate() : new Date(r.visitDate);
+                    return (date.getMonth() + 1) === selectedMonth && date.getFullYear() === selectedYear;
+                  }).length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="py-12 text-center text-slate-400 text-xs">
+                        Belum ada data kunjungan asuhan gigi pada periode {selectedMonth}/{selectedYear}.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
