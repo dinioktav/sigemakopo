@@ -846,127 +846,189 @@ export const DentalHygieneForm = () => {
     }
   };
 
+  const selectedPatient = patients.find(p => p.id === selectedPatientId);
+
   return (
-    <div className="p-8 max-w-6xl mx-auto">
-      <header className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-8 animate-in fade-in slide-in-from-top-4 duration-700">
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+      {/* Header */}
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-2 h-8 bg-gold rounded-full"></div>
-            <h1 className="text-4xl font-bold text-navy tracking-tighter uppercase">Rekam Dental Hygiene</h1>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+              <Stethoscope size={13} className="text-purple-600" />
+              Rekam Medis Elektronik
+            </span>
+            <span className="text-slate-300">•</span>
+            <span className="text-xs font-medium text-slate-500">Poli Gigi & Mulut</span>
+            <span className="text-slate-300">•</span>
+            <span className="text-[11px] font-semibold text-pink-600">SIGEMA KOPO</span>
           </div>
-          <p className="text-navy/40 font-black uppercase tracking-[0.3em] text-[10px] ml-5">Sistem Kesehatan Gigi Masyarakat Kopo</p>
+          <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">Form Asuhan Kesehatan Gigi & Mulut (Askesgilut)</h1>
+          <p className="text-xs text-slate-500">Standar Pelayanan UPTD Puskesmas Kopo · Terintegrasi SOAPIE & Odontogram</p>
         </div>
-        <div className="flex items-center gap-4">
+
+        <div className="flex items-center gap-2.5 flex-wrap">
           <button 
             onClick={() => setShowHistory(true)}
             disabled={!selectedPatientId}
-            className="px-8 py-4 bg-navy-50 border-2 border-navy/5 rounded-2xl text-xs font-black text-navy/60 hover:border-navy hover:text-navy transition-all uppercase tracking-widest shadow-sm flex items-center gap-2 disabled:opacity-30"
+            className="inline-flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 hover:bg-purple-50/50 hover:border-purple-200 text-slate-700 rounded-lg text-xs font-medium shadow-2xs transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <History size={16} />
-            Riwayat
+            <History size={14} className="text-purple-600" />
+            Riwayat Kunjungan
           </button>
           <button 
             onClick={handleSaveProgress}
             disabled={isSaving}
-            className="px-8 py-4 bg-white border-2 border-navy/5 rounded-2xl text-xs font-black text-navy/40 hover:border-pink hover:text-pink transition-all uppercase tracking-widest shadow-sm flex items-center gap-2"
+            className="inline-flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 hover:bg-purple-50/50 hover:border-purple-200 text-slate-700 rounded-lg text-xs font-medium shadow-2xs transition-colors"
           >
-            {isSaving ? <RefreshCw className="animate-spin" size={14} /> : <Save size={14} />}
-            {saveSuccess ? 'Tersimpan' : 'Simpan Draft'}
+            {isSaving ? <RefreshCw className="animate-spin text-purple-600" size={14} /> : <Save size={14} className="text-slate-500" />}
+            {saveSuccess ? 'Tersimpan!' : 'Simpan Draf'}
           </button>
           <button 
             onClick={handleSubmit}
             disabled={isSaving}
-            className="px-8 py-4 bg-navy rounded-2xl text-xs font-black text-gold hover:bg-navy-light shadow-2xl shadow-navy/40 transition-all flex items-center gap-3 uppercase tracking-widest border border-gold/20"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg text-xs font-semibold shadow-xs transition-all"
           >
-            {isSaving ? <RefreshCw className="animate-spin" size={18} /> : <Save size={18} />}
-            Finalisasi Rekam
+            {isSaving ? <RefreshCw className="animate-spin" size={14} /> : <CheckCircle2 size={14} />}
+            Finalisasi Rekam Medis
           </button>
         </div>
       </header>
 
-      {/* Patient Selection & Visit Info */}
-      <div className="mb-12 grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-top-4 duration-700 delay-100">
-        <div className="bg-white p-6 rounded-3xl border-2 border-navy/5 shadow-sm space-y-3">
-          <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest flex items-center gap-2">
-            <Users size={14} className="text-pink" /> Pilih Pasien
-          </label>
-          <select 
-            value={selectedPatientId}
-            onChange={(e) => setSelectedPatientId(e.target.value)}
-            className="w-full px-4 py-3 bg-navy-50 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-2xl text-sm font-bold transition-all appearance-none"
-          >
-            <option value="">-- Pilih Pasien --</option>
-            {patients.map(p => (
-              <option key={p.id} value={p.id}>{p.rmNumber || 'No RM'} - {p.name} ({p.nik})</option>
-            ))}
-          </select>
-        </div>
-        
-        <div className="bg-white p-6 rounded-3xl border-2 border-navy/5 shadow-sm space-y-3">
-          <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest flex items-center gap-2">
-            <Calendar size={14} className="text-pink" /> Tanggal Kunjungan
-          </label>
-          <input 
-            type="date"
-            value={formData.visitDate}
-            onChange={(e) => setFormData({...formData, visitDate: e.target.value})}
-            className="w-full px-4 py-3 bg-navy-50 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-2xl text-sm font-bold transition-all"
-          />
+      {/* Patient Selection & Visit Toolbar */}
+      <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+          <div className="md:col-span-6 space-y-1">
+            <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+              <Users size={14} className="text-purple-600" /> Pasien Rawat Jalan <span className="text-pink-600">*</span>
+            </label>
+            <div className="relative">
+              <select 
+                value={selectedPatientId}
+                onChange={(e) => setSelectedPatientId(e.target.value)}
+                className="w-full pl-3 pr-8 py-2 bg-slate-50/70 border border-slate-300 rounded-lg text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all appearance-none font-mono"
+              >
+                <option value="">-- Pilih Pasien dari Master Data --</option>
+                {patients.map(p => (
+                  <option key={p.id} value={p.id}>
+                    [{p.rmNumber || 'No RM'}] {p.name} - NIK: {p.nik} ({p.paymentMethod || 'Umum'})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          
+          <div className="md:col-span-3 space-y-1">
+            <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+              <Calendar size={14} className="text-purple-600" /> Tanggal Periksa
+            </label>
+            <input 
+              type="date"
+              value={formData.visitDate}
+              onChange={(e) => setFormData({...formData, visitDate: e.target.value})}
+              className="w-full px-3 py-2 bg-slate-50/70 border border-slate-300 rounded-lg text-xs font-mono font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all"
+            />
+          </div>
+
+          <div className="md:col-span-3 space-y-1">
+            <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+              <Activity size={14} className="text-pink-600" /> Kunjungan Ke-
+            </label>
+            <input 
+              type="number"
+              min="1"
+              value={formData.visitNumber}
+              onChange={(e) => setFormData({...formData, visitNumber: parseInt(e.target.value) || 1})}
+              className="w-full px-3 py-2 bg-slate-50/70 border border-slate-300 rounded-lg text-xs font-mono font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all"
+            />
+          </div>
         </div>
 
-        <div className="bg-white p-6 rounded-3xl border-2 border-navy/5 shadow-sm space-y-3">
-          <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest flex items-center gap-2">
-            <Activity size={14} className="text-pink" /> Kunjungan Ke
-          </label>
-          <input 
-            type="number"
-            value={formData.visitNumber}
-            onChange={(e) => setFormData({...formData, visitNumber: parseInt(e.target.value) || 1})}
-            className="w-full px-4 py-3 bg-navy-50 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-2xl text-sm font-bold transition-all"
-          />
-        </div>
+        {/* Selected Patient Mini Clinical Banner */}
+        {selectedPatient && (
+          <div className="bg-purple-50/60 border border-purple-200/70 rounded-lg p-3 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-4 flex-wrap">
+              <div>
+                <span className="text-slate-400 text-[11px] block uppercase font-mono">No. Rekam Medis</span>
+                <span className="font-mono font-bold text-purple-900">{selectedPatient.rmNumber || '-'}</span>
+              </div>
+              <div className="border-l border-purple-200 pl-4">
+                <span className="text-slate-400 text-[11px] block uppercase">Nama Pasien</span>
+                <span className="font-semibold text-slate-900">{selectedPatient.name}</span>
+              </div>
+              <div className="border-l border-purple-200 pl-4">
+                <span className="text-slate-400 text-[11px] block uppercase">Gender / Usia</span>
+                <span className="text-slate-700 font-medium">
+                  {selectedPatient.gender === 'L' ? 'Laki-laki' : 'Perempuan'} 
+                  {selectedPatient.birthDate ? ` • ${selectedPatient.birthDate}` : ''}
+                </span>
+              </div>
+              <div className="border-l border-purple-200 pl-4">
+                <span className="text-slate-400 text-[11px] block uppercase">Penjamin</span>
+                <span className={cn(
+                  "inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold",
+                  selectedPatient.paymentMethod === 'BPJS' ? "bg-emerald-100 text-emerald-800" : "bg-pink-100 text-pink-800 border border-pink-200"
+                )}>
+                  {selectedPatient.paymentMethod === 'BPJS' ? 'BPJS Kesehatan' : 'Pasien Umum'}
+                </span>
+              </div>
+            </div>
+
+            {selectedPatient.allergies && selectedPatient.allergies !== 'Tidak Ada' && (
+              <div className="bg-rose-50 border border-rose-200 text-rose-700 px-2.5 py-1 rounded text-xs flex items-center gap-1.5 font-medium">
+                <AlertCircle size={14} className="text-rose-500" />
+                <span>Alergi: <strong>{selectedPatient.allergies}</strong></span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Stepper */}
-      <div className="mb-16 relative px-4">
-        <div className="absolute top-1/2 left-0 w-full h-1 bg-navy/5 -translate-y-1/2 rounded-full"></div>
-        <div className="flex justify-between relative z-10">
-          {STEPS.map((step, i) => (
-            <button
-              key={step.id}
-              onClick={() => setCurrentStep(i)}
-              className="flex flex-col items-center group transition-all duration-500"
-            >
-              <div className={cn(
-                "w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 border-2 relative overflow-hidden",
-                currentStep === i 
-                  ? "bg-navy text-gold border-gold shadow-2xl shadow-navy/40 scale-110 rotate-3" 
-                  : i < currentStep 
-                    ? "bg-gold text-white border-gold shadow-lg shadow-gold/20" 
-                    : "bg-white text-navy/20 border-navy/5 group-hover:border-pink group-hover:text-pink"
-              )}>
-                {i < currentStep ? <CheckCircle2 size={24} /> : <step.icon size={24} />}
-                {currentStep === i && (
-                  <motion.div 
-                    layoutId="stepper-glow"
-                    className="absolute inset-0 bg-gold/10 animate-pulse"
-                  />
+      {/* Stepper Navigation */}
+      <div className="bg-white rounded-xl border border-slate-200 p-2 shadow-2xs overflow-x-auto">
+        <div className="flex items-center justify-between min-w-[720px] gap-1">
+          {STEPS.map((step, i) => {
+            const isActive = currentStep === i;
+            const isCompleted = i < currentStep;
+
+            return (
+              <button
+                key={step.id}
+                onClick={() => setCurrentStep(i)}
+                className={cn(
+                  "flex-1 flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-left transition-all text-xs",
+                  isActive
+                    ? "bg-purple-50/80 text-purple-900 font-semibold border border-purple-200 shadow-2xs"
+                    : isCompleted
+                      ? "text-slate-700 hover:bg-slate-50"
+                      : "text-slate-400 hover:text-slate-600 hover:bg-slate-50/50"
                 )}
-              </div>
-              <span className={cn(
-                "mt-5 text-[9px] font-black uppercase tracking-[0.2em] transition-all duration-500 max-w-[80px] text-center leading-tight",
-                currentStep === i ? "text-navy opacity-100 translate-y-0" : "text-navy/40 opacity-100 translate-y-0"
-              )}>
-                {step.label}
-              </span>
-            </button>
-          ))}
+              >
+                <div className={cn(
+                  "w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors font-mono text-xs font-semibold",
+                  isActive 
+                    ? "bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-2xs" 
+                    : isCompleted
+                      ? "bg-purple-100 text-purple-700" 
+                      : "bg-slate-100 text-slate-400"
+                )}>
+                  {isCompleted ? <CheckCircle2 size={15} /> : i + 1}
+                </div>
+                <div className="min-w-0">
+                  <p className={cn("truncate text-[11px] leading-tight", isActive ? "font-bold text-purple-950" : isCompleted ? "font-medium text-slate-800" : "text-slate-500")}>
+                    {step.label}
+                  </p>
+                  <p className="text-[10px] text-slate-400 uppercase tracking-wider font-mono">Tahap {i + 1}</p>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* Form Content */}
-      <div className="glass-card rounded-3xl min-h-[500px] flex flex-col overflow-hidden">
-        <div className="flex-1 p-8">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-xs min-h-[520px] flex flex-col overflow-hidden">
+        <div className="flex-1 p-6 md:p-8">
           <AnimatePresence>
             {showHistory && (
               <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -974,88 +1036,86 @@ export const DentalHygieneForm = () => {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="absolute inset-0 bg-navy/60 backdrop-blur-sm" 
+                  className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs" 
                   onClick={() => setShowHistory(false)}
                 />
                 <motion.div 
-                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                  initial={{ opacity: 0, scale: 0.95, y: 15 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                  className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[85vh]"
+                  exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                  className="bg-white w-full max-w-2xl rounded-2xl shadow-xl relative z-10 overflow-hidden flex flex-col max-h-[85vh] border border-slate-200"
                 >
-                  <header className="p-8 bg-navy text-white flex items-center justify-between">
+                  <header className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
                     <div>
-                      <h2 className="text-2xl font-black uppercase tracking-tighter">Riwayat Rekam Medis</h2>
-                      <p className="text-gold text-[10px] font-black uppercase tracking-[0.3em] mt-1">
-                        {patients.find(p => p.id === selectedPatientId)?.name || 'Pasien'}
+                      <div className="flex items-center gap-2">
+                        <History size={18} className="text-sky-400" />
+                        <h2 className="text-base font-bold text-white tracking-tight">Riwayat Rekam Medis Pasien</h2>
+                      </div>
+                      <p className="text-slate-400 text-xs mt-0.5">
+                        {patients.find(p => p.id === selectedPatientId)?.name || 'Pasien Terpilih'} · UPTD Puskesmas Kopo
                       </p>
                     </div>
-                    <button onClick={() => setShowHistory(false)} className="p-2 hover:bg-white/10 rounded-xl transition-all">
-                      <X size={24} />
+                    <button onClick={() => setShowHistory(false)} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-slate-400 hover:text-white">
+                      <X size={20} />
                     </button>
                   </header>
 
-                  <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                  <div className="flex-1 overflow-y-auto p-6 space-y-3 custom-scrollbar">
                     {patientRecords.length === 0 ? (
-                      <div className="text-center py-20">
-                        <History size={48} className="text-navy/10 mx-auto mb-4" />
-                        <p className="text-sm font-bold text-navy/30 uppercase tracking-widest">Belum ada riwayat pemeriksaan</p>
+                      <div className="text-center py-16 space-y-2">
+                        <History size={40} className="text-slate-300 stroke-[1.5] mx-auto mb-1" />
+                        <p className="text-sm font-semibold text-slate-600">Belum Ada Riwayat Kunjungan</p>
+                        <p className="text-xs text-slate-400">Pasien ini belum memiliki catatan rekam medis sebelumnya.</p>
                       </div>
                     ) : (
-                      <div className="space-y-4">
+                      <div className="space-y-3">
                         {patientRecords.map((record) => (
                           <div 
                             key={record.id}
-                            className={cn(
-                              "p-6 rounded-[2rem] border-2 transition-all group flex items-center justify-between gap-6",
-                              record.status === 'final' ? "bg-white border-navy/5 hover:border-navy" : "bg-pink-soft/20 border-pink/10 hover:border-pink"
-                            )}
+                            className="p-4 rounded-xl border border-slate-200 bg-white hover:border-sky-300 hover:shadow-2xs transition-all flex items-center justify-between gap-4"
                           >
-                            <div className="flex items-center gap-6">
-                              <div className={cn(
-                                "w-16 h-16 rounded-2xl flex flex-col items-center justify-center border transition-colors",
-                                record.status === 'final' ? "bg-navy-50 border-navy/5 group-hover:bg-navy group-hover:text-gold" : "bg-white border-pink/20"
-                              )}>
-                                <span className="text-lg font-black leading-none">
+                            <div className="flex items-center gap-4">
+                              <div className="w-14 h-14 rounded-lg bg-slate-100 border border-slate-200 flex flex-col items-center justify-center text-center shrink-0">
+                                <span className="text-lg font-bold font-mono text-slate-800 leading-none">
                                   {new Date(record.visitDate).getDate()}
                                 </span>
-                                <span className={cn(
-                                  "text-[8px] font-black uppercase tracking-widest mt-1",
-                                  record.status === 'final' ? "opacity-40" : "text-pink"
-                                )}>
-                                  {new Date(record.visitDate).toLocaleString('id-ID', { month: 'short' })}
+                                <span className="text-[10px] font-semibold text-slate-500 uppercase mt-0.5 font-mono">
+                                  {new Date(record.visitDate).toLocaleString('id-ID', { month: 'short', year: '2-digit' })}
                                 </span>
                               </div>
-                              <div>
-                                <div className="flex items-center gap-3 mb-1">
-                                  <h4 className="text-sm font-black text-navy uppercase tracking-tight">Kunjungan #{record.visitNumber}</h4>
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <h4 className="text-xs font-bold text-slate-900">Kunjungan Ke-{record.visitNumber || 1}</h4>
                                   <span className={cn(
-                                    "text-[8px] font-black px-2 py-1 rounded-full uppercase tracking-widest",
-                                    record.status === 'final' ? "bg-green-100 text-green-700" : "bg-pink-soft text-pink border border-pink/10"
+                                    "text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider",
+                                    record.status === 'final' 
+                                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200" 
+                                      : "bg-amber-50 text-amber-700 border border-amber-200"
                                   )}>
-                                    {record.status === 'final' ? 'FINAL' : 'DRAFT'}
+                                    {record.status === 'final' ? 'FINAL' : 'DRAF'}
                                   </span>
                                 </div>
-                                <div className="flex flex-wrap gap-2">
+                                <div className="flex flex-wrap gap-1 text-[11px] text-slate-600">
                                   {record.askesgilut?.diagnoses?.map((d: any, i: number) => d.kebutuhan && (
-                                    <span key={i} className="text-[10px] font-bold text-navy/40">
-                                      {i > 0 && "• "} {d.kebutuhan}
+                                    <span key={i} className="inline-block bg-slate-100 px-2 py-0.5 rounded text-slate-700">
+                                      {d.kebutuhan}
                                     </span>
                                   ))}
                                   {(!record.askesgilut?.diagnoses || record.askesgilut.diagnoses.length === 0) && (
-                                    <span className="text-[10px] italic text-navy/20">Tidak ada diagnosis khusus</span>
+                                    <span className="italic text-slate-400">Pemeriksaan umum tanpa diagnosis khusus</span>
                                   )}
                                 </div>
                               </div>
                             </div>
                             
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5 shrink-0">
                               <button 
                                 onClick={() => loadRecord(record)}
-                                className="p-3 bg-navy-50 text-navy hover:bg-navy hover:text-white rounded-xl transition-all"
-                                title="Lihat/Edit"
+                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-sky-50 text-sky-700 hover:bg-sky-600 hover:text-white rounded-md text-xs font-semibold transition-colors"
+                                title="Buka Formulir"
                               >
-                                <Eye size={18} />
+                                <Eye size={14} />
+                                <span>Muat</span>
                               </button>
                               {record.status === 'draft' && (
                                 <button 
@@ -1064,10 +1124,10 @@ export const DentalHygieneForm = () => {
                                     e.stopPropagation();
                                     handleDeleteRecord(record.id);
                                   }}
-                                  className="p-3 bg-pink-soft text-pink hover:bg-pink hover:text-white rounded-xl transition-all"
-                                  title="Hapus Draft"
+                                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors"
+                                  title="Hapus Draf"
                                 >
-                                  <Trash2 size={18} />
+                                  <Trash2 size={15} />
                                 </button>
                               )}
                             </div>
@@ -1077,8 +1137,8 @@ export const DentalHygieneForm = () => {
                     )}
                   </div>
                   
-                  <footer className="p-8 bg-navy-50 border-t border-navy/5 text-center">
-                    <p className="text-[10px] font-black text-navy/20 uppercase tracking-[0.3em]">Klik ikon mata untuk memuat data ke formulir</p>
+                  <footer className="p-3.5 bg-slate-50 border-t border-slate-200 text-center">
+                    <p className="text-[11px] text-slate-500">Klik tombol "Muat" pada kunjungan untuk mengisi form atau melanjutkan draf.</p>
                   </footer>
                 </motion.div>
               </div>

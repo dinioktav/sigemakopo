@@ -101,7 +101,7 @@ const ProfilePage = ({ userData, setUserData }: { userData: any, setUserData: an
         
         setUserData(formData);
         setIsEditing(false);
-        alert("Profil berhasil diperbarui!");
+        alert("Profil tenaga medis berhasil diperbarui!");
       }
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -112,73 +112,72 @@ const ProfilePage = ({ userData, setUserData }: { userData: any, setUserData: an
   };
 
   return (
-    <div className="p-8">
-      <header className="mb-10">
-        <h1 className="text-3xl font-bold text-navy tracking-tight uppercase">Profil Saya</h1>
-        <p className="text-navy/40 font-medium mt-1">Kelola informasi pribadi dan identitas profesional Anda.</p>
+    <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-6">
+      <header className="border-b border-slate-200 pb-4">
+        <h1 className="text-xl font-bold text-slate-900 tracking-tight">Profil Tenaga Medis</h1>
+        <p className="text-xs text-slate-500 mt-0.5">Identitas profesional dan kredensial praktisi UPTD Puskesmas Kopo.</p>
       </header>
 
-      <div className="max-w-4xl">
-        <div className="glass-card p-10 rounded-[3rem] relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-gold/5 rounded-full blur-3xl -z-10"></div>
-          
-          <div className="flex flex-col md:flex-row gap-12 items-start">
-            <div className="relative group">
-              <div className="w-48 h-48 rounded-[3rem] bg-navy overflow-hidden border-4 border-white shadow-2xl relative">
+      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
+        <div className="p-6 md:p-8">
+          <div className="flex flex-col sm:flex-row gap-8 items-start">
+            <div className="relative group shrink-0">
+              <div className="w-32 h-32 rounded-xl bg-slate-100 overflow-hidden border border-slate-200 shadow-xs relative">
                 <img 
                   src={formData.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${formData.fullName}`} 
                   alt="Profile" 
+                  referrerPolicy="no-referrer"
                   className="w-full h-full object-cover"
                 />
-                <label className="absolute inset-0 bg-navy/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer">
-                  <Camera className="text-gold mb-2" size={32} />
-                  <span className="text-[10px] font-black text-white uppercase tracking-widest">Ganti Foto</span>
-                  <input 
-                    type="file" 
-                    className="hidden" 
-                    accept="image/*" 
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                          setFormData({ ...formData, photoURL: reader.result as string });
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }}
-                  />
-                </label>
-              </div>
-              <div className="absolute -bottom-4 -right-4 w-12 h-12 bg-gold rounded-2xl flex items-center justify-center text-navy shadow-xl border-4 border-white">
-                <User size={20} />
+                {isEditing && (
+                  <label className="absolute inset-0 bg-slate-900/60 flex flex-col items-center justify-center cursor-pointer transition-opacity">
+                    <Camera className="text-white mb-1" size={20} />
+                    <span className="text-[10px] font-semibold text-white uppercase tracking-wider">Ubah Foto</span>
+                    <input 
+                      type="file" 
+                      className="hidden" 
+                      accept="image/*" 
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setFormData({ ...formData, photoURL: reader.result as string });
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </label>
+                )}
               </div>
             </div>
 
-            <div className="flex-1 space-y-8 w-full">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest ml-4">Nama Lengkap</label>
+            <div className="flex-1 space-y-6 w-full">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-700">Nama Lengkap & Gelar</label>
                   <div className="relative">
-                    <User className="absolute left-6 top-1/2 -translate-y-1/2 text-navy/20" size={18} />
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                     <input 
                       type="text" 
                       disabled={!isEditing}
                       value={formData.fullName}
                       onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                      className="w-full pl-14 pr-8 py-4 bg-navy-50/50 border-2 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-2xl text-sm transition-all font-bold disabled:opacity-60" 
+                      className="w-full pl-9 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-purple-600 focus:ring-1 focus:ring-purple-600 rounded-lg text-sm transition-all font-medium disabled:opacity-75 disabled:bg-slate-100/60" 
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest ml-4">Jenis Tenaga (Informasi)</label>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-700">Jenis Tenaga Medis</label>
                   <div className="relative">
-                    <Briefcase className="absolute left-6 top-1/2 -translate-y-1/2 text-navy/20" size={18} />
+                    <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                     <select 
                       disabled={!isEditing}
                       value={formData.jenisTenaga}
                       onChange={(e) => setFormData({ ...formData, jenisTenaga: e.target.value })}
-                      className="w-full pl-14 pr-8 py-4 bg-navy-50/50 border-2 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-2xl text-sm transition-all font-bold disabled:opacity-60 appearance-none"
+                      className="w-full pl-9 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-purple-600 focus:ring-1 focus:ring-purple-600 rounded-lg text-sm transition-all font-medium disabled:opacity-75 disabled:bg-slate-100/60 appearance-none"
                     >
                       <option value="Administrasi Umum">Administrasi Umum</option>
                       <option value="Terapis Gigi dan Mulut">Terapis Gigi dan Mulut</option>
@@ -189,26 +188,27 @@ const ProfilePage = ({ userData, setUserData }: { userData: any, setUserData: an
                 </div>
               </div>
 
-              <div className="p-6 bg-navy-50/30 rounded-3xl border border-navy/5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] font-black text-navy/40 uppercase tracking-widest">System Role (Read Only)</p>
-                    <p className="text-sm font-black text-navy uppercase tracking-tight mt-1">{userData.role}</p>
+              <div className="p-4 bg-purple-50/50 rounded-lg border border-purple-100 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold text-slate-800">Hak Akses Sistem</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs font-bold text-purple-700">{userData.role}</span>
+                    <span className="text-slate-300">·</span>
+                    <span className="text-[11px] text-slate-500">Dikelola oleh Super Administrator</span>
                   </div>
-                  <ShieldCheck className="text-gold" size={24} />
                 </div>
-                <p className="text-[9px] text-navy/30 font-bold uppercase tracking-widest mt-4 italic">* Role sistem menentukan hak akses Anda dan hanya dapat diubah oleh Administrator.</p>
+                <ShieldCheck className="text-pink-600" size={20} />
               </div>
 
-              <div className="pt-6 flex gap-4">
+              <div className="pt-2 flex gap-3">
                 {isEditing ? (
                   <>
                     <button 
                       onClick={handleSave}
                       disabled={isSaving}
-                      className="px-10 py-4 bg-navy text-gold rounded-2xl font-black hover:bg-navy-light shadow-xl shadow-navy/20 transition-all uppercase tracking-widest text-xs disabled:opacity-50 flex items-center gap-2"
+                      className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 shadow-sm transition-all text-xs flex items-center gap-2 disabled:opacity-50"
                     >
-                      {isSaving ? <RefreshCw className="animate-spin" size={16} /> : <Save size={16} />}
+                      {isSaving ? <RefreshCw className="animate-spin" size={14} /> : <Save size={14} />}
                       Simpan Perubahan
                     </button>
                     <button 
@@ -217,7 +217,7 @@ const ProfilePage = ({ userData, setUserData }: { userData: any, setUserData: an
                         setIsEditing(false);
                       }}
                       disabled={isSaving}
-                      className="px-10 py-4 bg-white border-2 border-navy/5 text-navy/40 rounded-2xl font-black hover:border-pink hover:text-pink transition-all uppercase tracking-widest text-xs disabled:opacity-50"
+                      className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-lg font-medium hover:bg-slate-50 transition-all text-xs disabled:opacity-50"
                     >
                       Batal
                     </button>
@@ -225,7 +225,7 @@ const ProfilePage = ({ userData, setUserData }: { userData: any, setUserData: an
                 ) : (
                   <button 
                     onClick={() => setIsEditing(true)}
-                    className="px-10 py-4 bg-navy text-gold rounded-2xl font-black hover:bg-navy-light shadow-xl shadow-navy/20 transition-all uppercase tracking-widest text-xs"
+                    className="px-5 py-2.5 bg-[#0c1222] text-white rounded-lg font-semibold hover:bg-purple-950 shadow-sm transition-all text-xs"
                   >
                     Edit Profil
                   </button>
@@ -248,24 +248,32 @@ const Dashboard = () => {
   });
   const [chartData, setChartData] = useState<any[]>([]);
   const [pieData, setPieData] = useState<any[]>([]);
+  const [recentRecords, setRecentRecords] = useState<any[]>([]);
+  const [patientsMap, setPatientsMap] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
+  const [queueSearch, setQueueSearch] = useState('');
 
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
 
-    // Patients Stats
+    // Patients Stats & Mapping
     const unsubPatients = onSnapshot(collection(db, 'patients'), (snapshot) => {
       const total = snapshot.size;
+      const pMap: Record<string, any> = {};
+      snapshot.docs.forEach(d => {
+        pMap[d.id] = { id: d.id, ...d.data() };
+      });
+      setPatientsMap(pMap);
       setStats(prev => ({ ...prev, totalPatients: total }));
     });
 
     // Records Stats
     const unsubRecords = onSnapshot(collection(db, 'dental_records'), (snapshot) => {
-      const records = snapshot.docs.map(doc => doc.data());
+      const records = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       
-      const visitsToday = records.filter(r => r.visitDate === today).length;
+      const visitsToday = records.filter((r: any) => r.visitDate === today).length;
       
-      const pendingSum = records.reduce((sum, r) => {
+      const pendingSum = records.reduce((sum: number, r: any) => {
         if (r.status === 'draft') return sum + (r.billing?.total || 0);
         return sum;
       }, 0);
@@ -274,8 +282,17 @@ const Dashboard = () => {
         ...prev, 
         visitsToday, 
         pendingBilling: pendingSum,
-        activeQueue: records.filter(r => r.status === 'draft').length
+        activeQueue: records.filter((r: any) => r.status === 'draft').length
       }));
+
+      // Sort recent records (today's or newest first)
+      const sortedRecords = [...records].sort((a: any, b: any) => {
+        const dateA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : new Date(a.visitDate || 0).getTime();
+        const dateB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : new Date(b.visitDate || 0).getTime();
+        return dateB - dateA;
+      }).slice(0, 8);
+
+      setRecentRecords(sortedRecords);
 
       // Chart Data (Last 6 Months)
       const last6Months = Array.from({ length: 6 }, (_, i) => {
@@ -291,7 +308,7 @@ const Dashboard = () => {
         };
       }).reverse();
 
-      records.forEach(r => {
+      records.forEach((r: any) => {
         const date = r.createdAt?.toDate ? r.createdAt.toDate() : new Date(r.visitDate);
         const month = date.getMonth() + 1;
         const year = date.getFullYear();
@@ -313,7 +330,7 @@ const Dashboard = () => {
       // Pie Data (Diagnosis Categories)
       const categories: Record<string, number> = {};
       let totalItems = 0;
-      records.forEach(r => {
+      records.forEach((r: any) => {
         r.askesgilut?.diagnoses?.forEach((d: any) => {
           if (d.kebutuhan) {
             categories[d.kebutuhan] = (categories[d.kebutuhan] || 0) + 1;
@@ -322,11 +339,12 @@ const Dashboard = () => {
         });
       });
 
+      const pieColors = ['#7c3aed', '#ec4899', '#0c1222', '#a78bfa', '#f472b6'];
       const pie = Object.entries(categories)
         .map(([name, value], i) => ({
           name,
-          value: parseFloat(((value / totalItems) * 100).toFixed(1)),
-          color: ['#db2777', '#f472b6', '#pink', '#gold', '#navy'][i % 5]
+          value: parseFloat(((value / (totalItems || 1)) * 100).toFixed(1)),
+          color: pieColors[i % pieColors.length]
         }))
         .sort((a, b) => b.value - a.value)
         .slice(0, 5);
@@ -343,105 +361,293 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="p-8 flex items-center justify-center min-h-[400px]">
-        <RefreshCw className="animate-spin text-pink" size={48} />
+      <div className="p-12 flex items-center justify-center min-h-[400px]">
+        <RefreshCw className="animate-spin text-purple-600" size={36} />
       </div>
     );
   }
 
+  // Filter queue records
+  const filteredQueue = recentRecords.filter((r: any) => {
+    if (!queueSearch) return true;
+    const p = patientsMap[r.patientId];
+    const search = queueSearch.toLowerCase();
+    return (
+      p?.name?.toLowerCase().includes(search) ||
+      p?.rmNumber?.toLowerCase().includes(search) ||
+      r.id.toLowerCase().includes(search)
+    );
+  });
+
+  const currentDateFormatted = new Date().toLocaleDateString('id-ID', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+
   return (
-    <div className="p-8 space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
+      {/* Clinical Shift Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-xl border border-slate-200/90 shadow-xs relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-full bg-gradient-to-l from-purple-50/60 to-transparent pointer-events-none"></div>
+        <div className="relative z-10">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-pink-500 animate-pulse"></span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-purple-700">
+              Shift Aktif: Pelayanan Rawat Jalan Poli Gigi
+            </span>
+          </div>
+          <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight mt-1">
+            Dashboard Pelayanan Asuhan Kesehatan Gigi & Mulut
+          </h1>
+          <p className="text-xs text-slate-500 mt-0.5">
+            UPTD Puskesmas Kopo · <span className="font-medium text-slate-700">{currentDateFormatted}</span>
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3 relative z-10">
+          <Link 
+            to="/patients" 
+            className="inline-flex items-center gap-2 px-3.5 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-lg text-xs font-semibold transition-all shadow-2xs"
+          >
+            <Users size={14} className="text-purple-600" />
+            + Pasien Baru
+          </Link>
+          <Link 
+            to="/records" 
+            className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white rounded-lg text-xs font-semibold transition-all shadow-sm shadow-purple-600/20"
+          >
+            <Plus size={14} />
+            Mulai Asuhan Pasien
+          </Link>
+        </div>
+      </div>
+
+      {/* KPI Cards Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total Pasien', value: stats.totalPatients.toString(), icon: Users, color: 'bg-primary' },
-          { label: 'Kunjungan Hari Ini', value: stats.visitsToday.toString(), icon: Calendar, color: 'bg-primary' },
-          { label: 'Billing Draft/Pending', value: `Rp ${stats.pendingBilling.toLocaleString()}`, icon: Receipt, color: 'bg-danger' },
-          { label: 'Pasien Dalam Proses', value: stats.activeQueue.toString(), icon: Activity, color: 'bg-success' },
+          { label: 'Total Pasien Terdaftar', value: stats.totalPatients.toLocaleString('id-ID'), icon: Users, subtext: 'Rekam Medis Aktif', theme: 'purple' },
+          { label: 'Kunjungan Hari Ini', value: stats.visitsToday.toString(), icon: Calendar, subtext: 'Pasien Rawat Jalan', theme: 'pink' },
+          { label: 'Dalam Antrean / Draft', value: stats.activeQueue.toString(), icon: Activity, subtext: 'Memerlukan Tindakan', theme: 'navy' },
+          { label: 'Billing Pending / Kasir', value: `Rp ${stats.pendingBilling.toLocaleString('id-ID')}`, icon: Receipt, subtext: 'Estimasi Pelayanan', theme: 'gradient' },
         ].map((stat, i) => (
-          <div key={i} className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-center gap-5 hover:border-primary/30 transition-all group">
-            <div className={cn("w-12 h-12 rounded-lg flex items-center justify-center text-white shadow-md transition-transform group-hover:scale-110", stat.color)}>
-              <stat.icon size={22} />
+          <div key={i} className="bg-white p-5 rounded-xl border border-slate-200/90 shadow-xs hover:border-purple-300 transition-all flex flex-col justify-between group">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-slate-500">{stat.label}</p>
+                <p className="text-2xl font-bold text-slate-900 tracking-tight mt-1 font-mono tabular-nums">{stat.value}</p>
+              </div>
+              <div className={cn(
+                "w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
+                stat.theme === 'purple' ? "bg-purple-50 text-purple-600 border border-purple-200" :
+                stat.theme === 'pink' ? "bg-pink-50 text-pink-600 border border-pink-200" :
+                stat.theme === 'navy' ? "bg-slate-900 text-white" :
+                "bg-gradient-to-tr from-purple-100 to-pink-100 text-purple-800 border border-purple-200"
+              )}>
+                <stat.icon size={18} />
+              </div>
             </div>
-            <div>
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-0.5">{stat.label}</p>
-              <p className="text-2xl font-bold text-gray-900 tracking-tight">{stat.value}</p>
-            </div>
+            <p className="text-[11px] text-slate-400 mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
+              <span>{stat.subtext}</span>
+              <span className={cn(
+                "font-semibold",
+                stat.theme === 'pink' ? "text-pink-600" : "text-purple-600"
+              )}>Terkini</span>
+            </p>
           </div>
         ))}
       </div>
 
+      {/* Epidemiological Trend & Human Needs Model Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white p-8 rounded-xl border border-gray-200 shadow-sm">
-          <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-50">
-            <h3 className="font-bold text-gray-700 uppercase tracking-widest text-[11px]">Tren Indikator Kesehatan (Rerata)</h3>
-            <div className="flex gap-4">
+        {/* Left: Epidemiological WHO Index Trend */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200/90 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6 pb-3 border-b border-slate-100">
+            <div>
+              <h2 className="text-sm font-bold text-slate-900 tracking-tight">Tren Indikator Epidemiologi (Rerata WHO)</h2>
+              <p className="text-xs text-slate-500">Evaluasi 6 bulan terakhir: DMF-T (Karies Gigi) & OHI-S (Kebersihan Mulut)</p>
+            </div>
+            <div className="flex items-center gap-4 text-xs">
               <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-pink-soft border-2 border-pink"></div>
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">DMF-T</span>
+                <span className="w-3 h-3 rounded-xs bg-purple-600"></span>
+                <span className="text-slate-600 font-medium">DMF-T</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-pink-soft/50 border-2 border-pink/50"></div>
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">OHI-S</span>
+                <span className="w-3 h-3 rounded-xs bg-pink-500"></span>
+                <span className="text-slate-600 font-medium">OHI-S</span>
               </div>
             </div>
           </div>
-          <div className="h-72">
+
+          <div className="h-68">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
+              <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 600 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 600 }} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} />
                 <Tooltip 
-                  contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', padding: '12px' }}
-                  cursor={{ fill: '#f8fafc' }}
+                  contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', fontSize: '12px' }}
+                  cursor={{ fill: '#faf5ff' }}
                 />
-                <Bar dataKey="dmft" fill="#db2777" radius={[4, 4, 0, 0]} barSize={24} />
-                <Bar dataKey="ohis" fill="#f472b6" radius={[4, 4, 0, 0]} barSize={24} />
+                <Bar dataKey="dmft" fill="#7c3aed" radius={[4, 4, 0, 0]} barSize={22} name="DMF-T" />
+                <Bar dataKey="ohis" fill="#ec4899" radius={[4, 4, 0, 0]} barSize={22} name="OHI-S" />
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
-        <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm">
-          <h3 className="font-bold text-gray-700 uppercase tracking-widest text-[11px] mb-8 pb-4 border-b border-gray-50">Sebaran Kebutuhan Pasien</h3>
-          {pieData.length > 0 ? (
-            <>
-              <div className="h-56">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      innerRadius={65}
-                      outerRadius={85}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} stroke="#fff" strokeWidth={2} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', padding: '12px' }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="mt-8 space-y-3">
-                {pieData.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: item.color }}></div>
-                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest overflow-hidden text-ellipsis whitespace-nowrap max-w-[150px]">{item.name}</span>
-                    </div>
-                    <span className="text-[10px] font-bold text-gray-900">{item.value}%</span>
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            <div className="h-full flex items-center justify-center text-center opacity-30 italic text-xs py-20">
-              Belum ada data pelayanan untuk dianalisis
+
+          {/* Reference Guideline Bar */}
+          <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-[11px] text-slate-500">
+            <div>
+              <span className="font-semibold text-slate-700">Tolok Ukur WHO: </span>
+              <span>OHI-S Baik (0.0 - 1.2) · Sedang (1.3 - 3.0) · Buruk (3.1 - 6.0)</span>
             </div>
-          )}
+            <div className="text-purple-600 font-medium">Target puskesmas: DMF-T $\le 3$</div>
+          </div>
+        </div>
+
+        {/* Right: Human Needs Model / Dental Hygiene Diagnosis Distribution */}
+        <div className="bg-white p-6 rounded-xl border border-slate-200/90 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="mb-4 pb-3 border-b border-slate-100">
+              <h2 className="text-sm font-bold text-slate-900 tracking-tight">Sebaran Diagnosis Asuhan Gigi</h2>
+              <p className="text-xs text-slate-500">Berdasarkan 8 Kebutuhan Manusia (Human Needs Model)</p>
+            </div>
+
+            {pieData.length > 0 ? (
+              <>
+                <div className="h-52">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        innerRadius={58}
+                        outerRadius={78}
+                        paddingAngle={4}
+                        dataKey="value"
+                      >
+                        {pieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} stroke="#fff" strokeWidth={2} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', fontSize: '12px' }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="mt-4 space-y-2">
+                  {pieData.map((item, i) => (
+                    <div key={i} className="flex items-center justify-between text-xs py-1 px-1.5 rounded hover:bg-purple-50/50 transition-colors">
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }}></span>
+                        <span className="text-slate-600 truncate font-medium max-w-[170px]">{item.name}</span>
+                      </div>
+                      <span className="font-mono font-semibold text-slate-900 tabular-nums">{item.value}%</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="h-48 flex items-center justify-center text-center text-slate-400 text-xs italic">
+                Belum ada data diagnosis askesgilut yang tercatat.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Clinical Patient Queue / Pelayanan & Antrean Terkini */}
+      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
+        <div className="p-5 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-bold text-slate-900 tracking-tight">Antrean & Riwayat Pelayanan Terkini</h2>
+            <p className="text-xs text-slate-500">Daftar pemeriksaan pasien rawat jalan hari ini di Poli Gigi.</p>
+          </div>
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+            <input 
+              type="text" 
+              placeholder="Cari pasien / No RM..."
+              value={queueSearch}
+              onChange={(e) => setQueueSearch(e.target.value)}
+              className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-purple-600 focus:ring-1 focus:ring-purple-600 rounded-lg text-xs"
+            />
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="bg-slate-50/80 text-slate-500 font-semibold border-b border-slate-200">
+                <th className="px-5 py-3 w-12 text-center">No</th>
+                <th className="px-5 py-3">No RM</th>
+                <th className="px-5 py-3">Nama Pasien</th>
+                <th className="px-5 py-3">Tanggal Kunjungan</th>
+                <th className="px-5 py-3">Indeks DMF-T / OHI-S</th>
+                <th className="px-5 py-3">Status</th>
+                <th className="px-5 py-3 text-right">Aksi Tindakan</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredQueue.length > 0 ? (
+                filteredQueue.map((record: any, index: number) => {
+                  const patient = patientsMap[record.patientId];
+                  const isFinal = record.status === 'final';
+                  const dmft = record.indices?.dmft?.total || 0;
+                  const ohis = record.indices?.ohis?.total || 0;
+                  
+                  return (
+                    <tr key={record.id} className="hover:bg-purple-50/30 transition-colors">
+                      <td className="px-5 py-3.5 text-center text-slate-400 font-mono">{index + 1}</td>
+                      <td className="px-5 py-3.5">
+                        <span className="font-mono font-medium text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded text-[11px]">
+                          {patient?.rmNumber || 'RM-BARU'}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <p className="font-semibold text-slate-900">{patient?.name || 'Anonim'}</p>
+                        <p className="text-[11px] text-slate-400">{patient?.gender || '-'} · {patient?.age ? `${patient.age} th` : '-'}</p>
+                      </td>
+                      <td className="px-5 py-3.5 font-medium text-slate-600">{record.visitDate || '-'}</td>
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-2 font-mono text-[11px]">
+                          <span className="text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100">D:{dmft}</span>
+                          <span className="text-pink-700 bg-pink-50 px-1.5 py-0.5 rounded border border-pink-100">O:{ohis}</span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <span className={cn(
+                          "inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-semibold border",
+                          isFinal 
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
+                            : "bg-pink-50 text-pink-700 border-pink-200"
+                        )}>
+                          <span className={cn("w-1.5 h-1.5 rounded-full", isFinal ? "bg-emerald-500" : "bg-pink-500")}></span>
+                          {isFinal ? 'Selesai' : 'Draf Aktif'}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-right">
+                        <Link 
+                          to={`/records?patientId=${patient?.id || record.patientId}`}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-50 hover:bg-purple-50 text-purple-700 border border-slate-200 hover:border-purple-200 rounded-md text-[11px] font-semibold transition-colors"
+                        >
+                          Buka Rekam
+                          <ChevronRight size={12} />
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-slate-400 text-xs">
+                    Tidak ada data pemeriksaan yang cocok dengan pencarian.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -630,183 +836,190 @@ const Reports = () => {
   }
 
   return (
-    <div className="p-8">
-      <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
-          <h1 className="text-3xl font-bold text-navy tracking-tight uppercase">Statistik & Laporan</h1>
-          <p className="text-navy/40 font-medium mt-1">Analisis data kesehatan gigi dan mulut populasi.</p>
+          <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">Statistik & Laporan Epidemiologi</h1>
+          <p className="text-xs text-slate-500 mt-0.5">Analisis agregat status kesehatan gigi dan mulut populasi UPTD Puskesmas Kopo.</p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-3">
           <button 
             onClick={handleAIAnalysis}
             disabled={isAnalyzing}
-            className="flex items-center justify-center gap-3 px-8 py-4 bg-pink text-white rounded-2xl font-bold hover:bg-pink-dark shadow-xl shadow-pink/20 transition-all uppercase tracking-widest text-xs disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-xs font-semibold shadow-sm shadow-sky-600/20 transition-all disabled:opacity-50"
           >
-            {isAnalyzing ? <RefreshCw className="animate-spin" size={20} /> : <Activity size={20} />}
-            {isAnalyzing ? 'Menganalisis...' : 'Analisis AI'}
+            {isAnalyzing ? <RefreshCw className="animate-spin" size={15} /> : <Activity size={15} />}
+            {isAnalyzing ? 'Menganalisis Data...' : 'Analisis Epidemiologi AI'}
           </button>
         </div>
       </header>
 
       {/* Monthly Report Controls */}
-      <div className="glass-card p-10 rounded-[3rem] mb-10 bg-navy text-white relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-pink/20 rounded-full blur-[80px] -z-0"></div>
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-8">
-            <ClipboardList className="text-pink" size={24} />
-            <h3 className="text-xs font-black uppercase tracking-[0.3em] opacity-80">Export Laporan Bulanan</h3>
+      <div className="bg-white p-6 rounded-xl border border-slate-200/90 shadow-xs">
+        <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
+          <ClipboardList className="text-sky-600" size={18} />
+          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700">Filter & Ekspor Laporan Bulanan</h2>
+        </div>
+        
+        <div className="flex flex-col md:flex-row gap-4 items-end">
+          <div className="flex-1 space-y-1.5 w-full">
+            <label className="text-xs font-medium text-slate-700">Pilih Bulan Pelayanan</label>
+            <select 
+              value={selectedMonth}
+              onChange={e => setSelectedMonth(parseInt(e.target.value))}
+              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-sky-600 focus:ring-1 focus:ring-sky-600 rounded-lg text-xs font-medium transition-all"
+            >
+              {Array.from({length: 12}).map((_, i) => (
+                <option key={i+1} value={i+1}>{new Date(2000, i).toLocaleString('id-ID', {month: 'long'})}</option>
+              ))}
+            </select>
           </div>
-          
-          <div className="flex flex-col md:flex-row gap-6 items-end">
-            <div className="flex-1 space-y-2">
-              <label className="text-[10px] font-black text-white/40 uppercase tracking-widest ml-4">Pilih Bulan</label>
-              <select 
-                value={selectedMonth}
-                onChange={e => setSelectedMonth(parseInt(e.target.value))}
-                className="w-full px-6 py-4 bg-white/10 border-2 border-transparent focus:bg-white focus:text-navy focus:border-pink rounded-2xl text-sm font-bold transition-all appearance-none"
-              >
-                {Array.from({length: 12}).map((_, i) => (
-                  <option key={i+1} value={i+1}>{new Date(2000, i).toLocaleString('id-ID', {month: 'long'})}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex-1 space-y-2">
-              <label className="text-[10px] font-black text-white/40 uppercase tracking-widest ml-4">Pilih Tahun</label>
-              <select 
-                value={selectedYear}
-                onChange={e => setSelectedYear(parseInt(e.target.value))}
-                className="w-full px-6 py-4 bg-white/10 border-2 border-transparent focus:bg-white focus:text-navy focus:border-pink rounded-2xl text-sm font-bold transition-all appearance-none"
-              >
-                {[2024, 2025, 2026].map(year => (
-                  <option key={year} value={year}>{year}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex gap-4">
-              <button 
-                onClick={exportPDF}
-                className="flex items-center justify-center gap-2 px-6 py-4 bg-pink text-white rounded-2xl font-black hover:bg-pink-dark transition-all uppercase tracking-widest text-[10px]"
-              >
-                <Download size={18} /> Export PDF
-              </button>
-              <button 
-                onClick={exportExcel}
-                className="flex items-center justify-center gap-2 px-6 py-4 bg-green-500 text-white rounded-2xl font-black hover:bg-green-600 transition-all uppercase tracking-widest text-[10px]"
-              >
-                <TrendingUp size={18} /> Export Excel
-              </button>
-            </div>
+          <div className="flex-1 space-y-1.5 w-full">
+            <label className="text-xs font-medium text-slate-700">Pilih Tahun</label>
+            <select 
+              value={selectedYear}
+              onChange={e => setSelectedYear(parseInt(e.target.value))}
+              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-sky-600 focus:ring-1 focus:ring-sky-600 rounded-lg text-xs font-medium transition-all"
+            >
+              {[2024, 2025, 2026].map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex gap-2.5 w-full md:w-auto">
+            <button 
+              onClick={exportPDF}
+              className="flex-1 md:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold shadow-xs transition-all"
+            >
+              <Download size={15} /> Cetak PDF
+            </button>
+            <button 
+              onClick={exportExcel}
+              className="flex-1 md:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-xs transition-all"
+            >
+              <TrendingUp size={15} /> Ekspor Excel
+            </button>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+      {/* Summary KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { label: 'Total Rekam Medis', value: records.length, status: 'Total', color: 'text-pink', bg: 'bg-pink-soft' },
-          { label: 'Bulan Ini', value: records.filter(r => (r.createdAt?.toDate ? r.createdAt.toDate().getMonth() : new Date(r.visitDate).getMonth()) === new Date().getMonth()).length, status: 'Aktif', color: 'text-navy', bg: 'bg-navy-50' },
-          { label: 'Total Billing', value: `Rp ${records.reduce((acc, r) => acc + (r.billing?.total || 0), 0).toLocaleString()}`, status: 'Pendapatan', color: 'text-pink-light', bg: 'bg-pink-soft/50' },
+          { label: 'Total Rekam Medis Keseluruhan', value: records.length.toLocaleString('id-ID'), badge: 'Kumulatif' },
+          { label: 'Kunjungan Bulan Terpilih', value: records.filter(r => (r.createdAt?.toDate ? r.createdAt.toDate().getMonth() : new Date(r.visitDate).getMonth()) === (selectedMonth - 1)).length.toString(), badge: 'Bulan Ini' },
+          { label: 'Total Billing & Kasir', value: `Rp ${records.reduce((acc, r) => acc + (r.billing?.total || 0), 0).toLocaleString('id-ID')}`, badge: 'Pendapatan' },
         ].map((item, i) => (
-          <div key={i} className="bg-white p-8 rounded-[2.5rem] border border-navy/5 shadow-sm">
-            <p className="text-[10px] text-navy/30 font-bold uppercase tracking-widest mb-2">{item.label}</p>
-            <div className="flex items-end gap-3">
-              <p className="text-3xl font-bold text-navy tracking-tighter">{item.value}</p>
-              <span className={cn("text-[9px] font-bold px-3 py-1 rounded-full mb-1 uppercase tracking-widest", item.bg, item.color)}>
-                {item.status}
+          <div key={i} className="bg-white p-5 rounded-xl border border-slate-200/90 shadow-xs flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-slate-500">{item.label}</p>
+              <span className="text-[10px] font-semibold text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-100">
+                {item.badge}
               </span>
             </div>
+            <p className="text-2xl font-bold text-slate-900 tracking-tight mt-2 font-mono tabular-nums">{item.value}</p>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
-        <div className="bg-white p-10 rounded-[3rem] border border-navy/5 shadow-sm">
-          <h3 className="font-bold text-navy uppercase tracking-widest text-[11px] mb-10">Laporan Epidemiologi (WHO Standard)</h3>
-          <div className="h-80">
+      {/* Charts & AI Analysis Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white p-6 rounded-xl border border-slate-200/90 shadow-xs">
+          <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+            <div>
+              <h2 className="text-sm font-bold text-slate-900 tracking-tight">Tren Indikator Kesehatan Gigi (WHO)</h2>
+              <p className="text-xs text-slate-500">DMF-T (Karies Gigi) vs OHI-S (Indeks Higiene Mulut)</p>
+            </div>
+            <div className="flex items-center gap-3 text-xs">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-xs bg-slate-900"></span>
+                <span className="text-slate-600 font-medium">DMF-T</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-xs bg-sky-600"></span>
+                <span className="text-slate-600 font-medium">OHI-S</span>
+              </div>
+            </div>
+          </div>
+          <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
+              <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 600 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 600 }} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} />
                 <Tooltip 
-                  contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgba(15, 23, 42, 0.1)', padding: '16px' }}
+                  contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', fontSize: '12px' }}
                 />
-                <Line type="monotone" dataKey="dmft" stroke="#1e293b" strokeWidth={3} dot={{ r: 5, fill: '#1e293b', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 7 }} />
-                <Line type="monotone" dataKey="ohis" stroke="#db2777" strokeWidth={3} dot={{ r: 5, fill: '#db2777', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 7 }} />
+                <Line type="monotone" dataKey="dmft" stroke="#0f172a" strokeWidth={2.5} dot={{ r: 4, fill: '#0f172a', strokeWidth: 1.5, stroke: '#fff' }} activeDot={{ r: 6 }} name="DMF-T" />
+                <Line type="monotone" dataKey="ohis" stroke="#0284c7" strokeWidth={2.5} dot={{ r: 4, fill: '#0284c7', strokeWidth: 1.5, stroke: '#fff' }} activeDot={{ r: 6 }} name="OHI-S" />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <AnimatePresence>
-          {aiAnalysis && (
-            <motion.div 
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="bg-white p-10 rounded-[3rem] border border-pink/10 shadow-sm"
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-pink rounded-xl flex items-center justify-center text-white shadow-lg">
-                  <Activity size={18} />
-                </div>
-                <h3 className="font-bold text-navy uppercase tracking-widest text-[11px]">Hasil Analisis AI</h3>
-              </div>
-              <div className="prose prose-sm prose-navy max-w-none text-navy/70 font-medium leading-relaxed">
-                {aiAnalysis.split('\n').map((line, i) => (
-                  <p key={i} className="mb-2">{line}</p>
-                ))}
-              </div>
-            </motion.div>
+        <div className="bg-white p-6 rounded-xl border border-slate-200/90 shadow-xs flex flex-col">
+          <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
+            <Activity className="text-sky-600" size={18} />
+            <h2 className="text-sm font-bold text-slate-900 tracking-tight">Telaah Klinis & Rekomendasi AI</h2>
+          </div>
+          {aiAnalysis ? (
+            <div className="prose prose-sm max-w-none text-slate-700 font-normal leading-relaxed overflow-y-auto max-h-72 custom-scrollbar text-xs">
+              {aiAnalysis.split('\n').map((line, i) => (
+                <p key={i} className="mb-1.5">{line}</p>
+              ))}
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-8 text-slate-400">
+              <Activity size={32} className="text-slate-300 mb-2" />
+              <p className="text-xs font-medium">Klik tombol &quot;Analisis Epidemiologi AI&quot; di atas untuk menghasilkan telaah otomatis berbasis data populasi.</p>
+            </div>
           )}
-        </AnimatePresence>
+        </div>
       </div>
 
       {/* Preview Table */}
-      <div className="bg-white p-10 rounded-[3rem] border border-navy/5 shadow-xl">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h3 className="text-xl font-black text-navy uppercase tracking-tight">Preview Data Kunjungan</h3>
-            <p className="text-[10px] font-bold text-navy/30 uppercase tracking-widest mt-1">Menampilkan data periode {selectedMonth}/{selectedYear}</p>
-          </div>
+      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
+        <div className="p-5 border-b border-slate-200/80">
+          <h2 className="text-sm font-bold text-slate-900 tracking-tight">Pratinjau Data Kunjungan Terperinci</h2>
+          <p className="text-xs text-slate-500">Rekap data periode {selectedMonth}/{selectedYear}</p>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-navy text-white text-[10px] uppercase font-black tracking-widest">
-                <th className="px-6 py-4 rounded-tl-2xl">No</th>
-                <th className="px-6 py-4">No RM</th>
-                <th className="px-6 py-4">Tanggal</th>
-                <th className="px-6 py-4">Pasien</th>
-                <th className="px-6 py-4 rounded-tr-2xl">Ringkasan Pengkajian</th>
+              <tr className="bg-slate-50/80 text-slate-500 font-semibold border-b border-slate-200">
+                <th className="px-5 py-3 w-12 text-center">No</th>
+                <th className="px-5 py-3">No RM</th>
+                <th className="px-5 py-3">Tanggal</th>
+                <th className="px-5 py-3">Nama Pasien</th>
+                <th className="px-5 py-3">Ringkasan Pengkajian & Diagnosis</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-navy/5">
+            <tbody className="divide-y divide-slate-100">
               {records.filter(r => {
                 const date = r.createdAt?.toDate ? r.createdAt.toDate() : new Date(r.visitDate);
                 return (date.getMonth() + 1) === selectedMonth && date.getFullYear() === selectedYear;
               }).map((record, i) => {
                 const p = patients.find(pat => pat.id === record.patientId);
                 return (
-                  <tr key={record.id} className="hover:bg-navy-50/50 transition-colors">
-                    <td className="px-6 py-4 text-[10px] font-black text-navy/20">{i + 1}</td>
-                    <td className="px-6 py-4">
-                      <span className="text-[10px] font-black text-navy bg-navy-50 px-2 py-1 rounded-md">{p?.rmNumber || 'N/A'}</span>
+                  <tr key={record.id} className="hover:bg-slate-50/60 transition-colors">
+                    <td className="px-5 py-3 text-center text-slate-400 font-mono">{i + 1}</td>
+                    <td className="px-5 py-3 font-mono font-medium text-slate-800">
+                      {p?.rmNumber || 'N/A'}
                     </td>
-                    <td className="px-6 py-4 text-xs font-bold text-navy/60">{record.visitDate}</td>
-                    <td className="px-6 py-4">
-                      <p className="text-xs font-black text-navy uppercase">{p?.name || 'Anonim'}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-[10px] font-medium text-navy/40 leading-relaxed max-w-md line-clamp-2">
-                        {formatAssessment(record)}
-                      </p>
+                    <td className="px-5 py-3 text-slate-600 font-medium">{record.visitDate}</td>
+                    <td className="px-5 py-3 font-semibold text-slate-900">{p?.name || 'Anonim'}</td>
+                    <td className="px-5 py-3 text-slate-600 max-w-md">
+                      {formatAssessment(record)}
                     </td>
                   </tr>
                 );
               })}
               {records.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-20 text-center opacity-30 italic text-xs">Belum ada data kunjungan</td>
+                  <td colSpan={5} className="py-12 text-center text-slate-400 text-xs">
+                    Belum ada data kunjungan pada periode ini.
+                  </td>
                 </tr>
               )}
             </tbody>
@@ -827,67 +1040,65 @@ const SidebarItem = ({ to, icon: Icon, label, active, permission, userRole, isCo
       to={to}
       title={isCollapsed ? label : ""}
       className={cn(
-        "flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 group relative whitespace-nowrap overflow-hidden",
+        "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-150 group relative whitespace-nowrap overflow-hidden text-xs font-medium",
         active 
-          ? "bg-primary text-white shadow-md shadow-primary/20" 
-          : "text-white/60 hover:bg-white/5 hover:text-white",
+          ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold shadow-xs shadow-purple-900/30" 
+          : "text-slate-400 hover:bg-slate-900/80 hover:text-white",
         isCollapsed && "justify-center px-0"
       )}
     >
-      <Icon size={18} className={cn("transition-colors shrink-0", active ? "text-white" : "text-white/40 group-hover:text-white")} />
-      {!isCollapsed && <span className={cn("text-sm font-medium transition-all")}>{label}</span>}
+      <Icon size={16} className={cn("shrink-0", active ? "text-white" : "text-slate-400 group-hover:text-pink-300")} />
+      {!isCollapsed && <span>{label}</span>}
     </Link>
   );
 };
 
 const SettingsPage = ({ userRole }: { userRole: string }) => (
-  <div className="p-8">
-    <header className="mb-10">
-      <h1 className="text-3xl font-black text-navy tracking-tight uppercase">Pengaturan Sistem</h1>
-      <p className="text-navy/40 font-medium mt-1">Konfigurasi klinik dan preferensi aplikasi.</p>
+  <div className="p-6 md:p-8 space-y-6 max-w-5xl mx-auto">
+    <header className="border-b border-slate-200 pb-4">
+      <h1 className="text-xl font-bold text-slate-900 tracking-tight">Pengaturan Sistem & Puskesmas</h1>
+      <p className="text-xs text-slate-500 mt-0.5">Konfigurasi operasional klinik, preferensi sistem, dan hak akses.</p>
     </header>
     
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      <div className="glass-card p-10 rounded-[3rem]">
-        <h3 className="text-xl font-black text-navy uppercase tracking-tight mb-8">Profil Klinik</h3>
-        <div className="space-y-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="bg-white p-6 rounded-xl border border-slate-200/90 shadow-xs">
+        <h2 className="text-sm font-bold text-slate-900 tracking-tight mb-4 pb-2 border-b border-slate-100">Profil Fasilitas Pelayanan Kesehatan</h2>
+        <div className="space-y-4">
           {[
-            { label: 'Nama Klinik', value: 'SIGEMA KOPO' },
-            { label: 'Tagline', value: 'Sistem Kesehatan Gigi Masyarakat Kopo' },
-            { label: 'Alamat', value: 'Jl. Kopo No. 123, Bandung' },
-            { label: 'Telepon', value: '022-1234567' },
+            { label: 'Nama Faskes / Puskesmas', value: 'UPTD Puskesmas Kopo' },
+            { label: 'Unit Pelayanan', value: 'Poli Kesehatan Gigi dan Mulut' },
+            { label: 'Alamat Faskes', value: 'Jl. Kopo No. 123, Kota Bandung' },
+            { label: 'Nomor Kontak Layanan', value: '022-1234567' },
           ].map((field, i) => (
-            <div key={i} className="space-y-2">
-              <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest ml-4">{field.label}</label>
-              <input type="text" defaultValue={field.value} className="w-full px-8 py-4 bg-navy-50/50 border-2 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-2xl text-sm transition-all font-bold" />
+            <div key={i} className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700">{field.label}</label>
+              <input type="text" defaultValue={field.value} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-sky-600 focus:ring-1 focus:ring-sky-600 rounded-lg text-sm transition-all font-medium" />
             </div>
           ))}
         </div>
       </div>
 
-      <div className="space-y-8">
-        <div className="glass-card p-10 rounded-[3rem]">
-          <h3 className="text-xl font-black text-navy uppercase tracking-tight mb-8">Preferensi Sistem</h3>
-          <div className="space-y-6">
+      <div className="space-y-6">
+        <div className="bg-white p-6 rounded-xl border border-slate-200/90 shadow-xs">
+          <h2 className="text-sm font-bold text-slate-900 tracking-tight mb-4 pb-2 border-b border-slate-100">Preferensi Sistem & Standar</h2>
+          <div className="space-y-4">
             {[
-              { label: 'Bahasa', value: 'Bahasa Indonesia' },
-              { label: 'Zona Waktu', value: 'WIB (UTC+7)' },
+              { label: 'Standar Asuhan Gigi', value: 'Standar Kemenkes RI & WHO Human Needs Model' },
+              { label: 'Zona Waktu Operasional', value: 'WIB (UTC+7)' },
             ].map((field, i) => (
-              <div key={i} className="space-y-2">
-                <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest ml-4">{field.label}</label>
-                <select className="w-full px-8 py-4 bg-navy-50/50 border-2 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-2xl text-sm transition-all font-bold appearance-none">
-                  <option>{field.value}</option>
-                </select>
+              <div key={i} className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-700">{field.label}</label>
+                <input type="text" readOnly defaultValue={field.value} className="w-full px-3.5 py-2.5 bg-slate-100/70 border border-slate-200 rounded-lg text-xs transition-all font-medium text-slate-600" />
               </div>
             ))}
           </div>
         </div>
 
         {userRole === 'Super Admin' && (
-          <div className="glass-card p-10 rounded-[3rem] border-2 border-gold/20">
-            <div className="flex items-center justify-between mb-8">
-              <h3 className="text-xl font-black text-navy uppercase tracking-tight">Manajemen Pengguna</h3>
-              <ShieldCheck className="text-gold" size={24} />
+          <div className="bg-white p-6 rounded-xl border border-slate-200/90 shadow-xs">
+            <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+              <h2 className="text-sm font-bold text-slate-900 tracking-tight">Manajemen Pengguna & Staf</h2>
+              <ShieldCheck className="text-sky-600" size={18} />
             </div>
             <UserManagement />
           </div>
@@ -901,12 +1112,12 @@ const ProtectedRoute = ({ children, permission, userRole }: { children: React.Re
   const hasPermission = PERMISSIONS[userRole]?.includes(permission);
   if (!hasPermission) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center p-8 text-center">
-        <div className="w-20 h-20 bg-pink-soft text-pink rounded-[2rem] flex items-center justify-center mb-6 shadow-xl shadow-pink/10">
-          <ShieldCheck size={40} />
+      <div className="min-h-[50vh] flex flex-col items-center justify-center p-8 text-center">
+        <div className="w-14 h-14 bg-red-50 text-red-600 rounded-xl flex items-center justify-center mb-4 border border-red-100">
+          <ShieldCheck size={28} />
         </div>
-        <h2 className="text-2xl font-black text-navy uppercase tracking-tighter mb-2">Akses Terbatas</h2>
-        <p className="text-navy/40 font-medium max-w-md">Maaf, akun Anda tidak memiliki izin untuk mengakses modul ini. Silakan hubungi administrator jika Anda merasa ini adalah kesalahan.</p>
+        <h2 className="text-lg font-bold text-slate-900 tracking-tight mb-1">Akses Modul Terbatas</h2>
+        <p className="text-xs text-slate-500 max-w-sm">Akun Anda dengan peran &apos;{userRole}&apos; tidak memiliki izin untuk membuka modul ini. Silakan hubungi Super Admin untuk penyesuaian hak akses.</p>
       </div>
     );
   }
@@ -918,21 +1129,22 @@ const Breadcrumbs = () => {
   const pathnames = location.pathname.split('/').filter(x => x);
   
   return (
-    <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest px-8 py-3 bg-white border-b border-gray-100 mb-6 shadow-sm">
-      <Link to="/" className="hover:text-primary transition-colors flex items-center gap-1.5 translate-y-[-0.5px]">
-        <Home size={12} className="text-gray-300" />
+    <div className="flex items-center gap-1.5 text-xs text-slate-400 px-6 md:px-8 py-2.5 bg-white border-b border-slate-200/80">
+      <Link to="/" className="hover:text-purple-600 transition-colors flex items-center gap-1 text-slate-500">
+        <Home size={13} />
+        <span>Poli Gigi</span>
       </Link>
-      <ChevronRight size={10} className="text-gray-300" />
+      <ChevronRight size={12} className="text-slate-300" />
       {pathnames.length === 0 ? (
-        <span className="text-primary">Dashboard</span>
+        <span className="font-semibold text-purple-900">Dashboard</span>
       ) : (
         pathnames.map((name, index) => {
           const isLast = index === pathnames.length - 1;
           const displayName = name.charAt(0).toUpperCase() + name.slice(1).replace(/-/g, ' ');
           return (
             <React.Fragment key={name}>
-              {index > 0 && <ChevronRight size={10} className="text-gray-300" />}
-              <span className={cn(isLast ? "text-primary" : "text-gray-400")}>{displayName}</span>
+              {index > 0 && <ChevronRight size={12} className="text-slate-300" />}
+              <span className={cn(isLast ? "font-semibold text-purple-900" : "text-slate-500")}>{displayName}</span>
             </React.Fragment>
           );
         })
@@ -956,7 +1168,7 @@ const Layout = ({ children, userData, setUserData, onLogout }: { children: React
   }, [location]);
 
   return (
-    <div className="min-h-screen bg-[#f3f4f6] flex relative overflow-x-hidden">
+    <div className="min-h-screen bg-[#f8fafc] flex relative overflow-x-hidden font-sans">
       {/* Mobile Backdrop */}
       <AnimatePresence>
         {isSidebarOpen && !isSidebarCollapsed && (
@@ -965,169 +1177,196 @@ const Layout = ({ children, userData, setUserData, onLogout }: { children: React
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setSidebarOpen(false)}
-            className="fixed inset-0 bg-navy-dark/40 backdrop-blur-sm z-40 lg:hidden"
+            className="fixed inset-0 bg-[#060913]/60 backdrop-blur-xs z-40 lg:hidden"
           />
         )}
       </AnimatePresence>
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 bg-navy-dark border-r border-white/5 transition-all duration-300 transform lg:translate-x-0 lg:static lg:inset-0 shadow-xl flex flex-col",
-        isSidebarCollapsed ? "w-20" : "w-64",
+        "fixed inset-y-0 left-0 z-50 bg-[#080d1a] border-r border-slate-800/90 transition-all duration-200 transform lg:translate-x-0 lg:static lg:inset-0 flex flex-col shrink-0",
+        isSidebarCollapsed ? "w-18" : "w-60",
         !isSidebarOpen && "-translate-x-full"
       )}>
-        <div className="h-full flex flex-col p-4">
-          <div className={cn("flex items-center mb-8 px-2 py-4 border-b border-white/5 relative", isSidebarCollapsed ? "justify-center" : "gap-3")}>
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-lg shrink-0">
+        <div className="h-full flex flex-col p-3">
+          {/* Brand Logo Header */}
+          <div className={cn("flex items-center mb-6 px-2 py-3 border-b border-slate-800/80 relative", isSidebarCollapsed ? "justify-center" : "gap-3")}>
+            <div className="w-8 h-8 bg-gradient-to-tr from-purple-600 via-indigo-600 to-pink-500 rounded-lg flex items-center justify-center text-white font-bold text-base shadow-md shadow-purple-900/30 shrink-0">
               S
             </div>
             {!isSidebarCollapsed && (
               <div className="overflow-hidden">
-                <h2 className="text-xs font-bold text-white tracking-tight leading-tight truncate">Sistem Informasi Kesehatan Gigi Masyarakat</h2>
-                <p className="text-[9px] font-medium text-white/40 uppercase tracking-wider mt-0.5 truncate">UPTD Puskesmas Kopo</p>
+                <h2 className="text-xs font-bold text-white tracking-tight leading-tight truncate">SIGEMA KOPO</h2>
+                <p className="text-[10px] text-pink-400/90 mt-0.5 truncate font-medium">Poli Gigi & Mulut</p>
               </div>
             )}
             
             {/* Desktop Collapse Toggle */}
             <button 
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              className="absolute -right-7 top-1/2 -translate-y-1/2 w-6 h-6 bg-navy-dark border border-white/5 rounded-full hidden lg:flex items-center justify-center text-white/40 hover:text-white transition-all z-10"
+              className="absolute -right-6 top-1/2 -translate-y-1/2 w-5 h-5 bg-slate-900 border border-slate-700 rounded-full hidden lg:flex items-center justify-center text-slate-400 hover:text-white transition-all z-10"
+              title={isSidebarCollapsed ? "Perluas Sidebar" : "Ciutkan Sidebar"}
             >
-              <ChevronRight size={12} className={cn("transition-transform", !isSidebarCollapsed && "rotate-180")} />
+              <ChevronRight size={11} className={cn("transition-transform", !isSidebarCollapsed && "rotate-180")} />
             </button>
           </div>
 
+          {/* Navigation Links */}
           <nav className="flex-1 space-y-1 overflow-y-auto custom-scrollbar overflow-x-hidden">
+            {!isSidebarCollapsed && <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-3 mb-1 mt-2">Utama</p>}
             <SidebarItem to="/" icon={LayoutDashboard} label="Dashboard" active={location.pathname === '/'} permission="dashboard" userRole={userData.role} isCollapsed={isSidebarCollapsed} />
-            <div className="py-2"></div>
-            {!isSidebarCollapsed && <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest mb-2 px-4">Master Data</p>}
+            
+            <div className="py-1"></div>
+            {!isSidebarCollapsed && <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-3 mb-1 mt-2">Pelayanan Klinis</p>}
             <SidebarItem to="/patients" icon={Users} label="Data Pasien" active={location.pathname.startsWith('/patients')} permission="patients" userRole={userData.role} isCollapsed={isSidebarCollapsed} />
-            
-            <div className="py-2"></div>
-            {!isSidebarCollapsed && <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest mb-2 px-4">Transaksi</p>}
-            <SidebarItem to="/records" icon={ClipboardList} label="Pelayanan" active={location.pathname.startsWith('/records')} permission="records" userRole={userData.role} isCollapsed={isSidebarCollapsed} />
+            <SidebarItem to="/records" icon={ClipboardList} label="Pelayanan Gigi" active={location.pathname.startsWith('/records')} permission="records" userRole={userData.role} isCollapsed={isSidebarCollapsed} />
             <SidebarItem to="/informed-consent" icon={FileCheck} label="Informed Consent" active={location.pathname === '/informed-consent'} permission="informed-consent" userRole={userData.role} isCollapsed={isSidebarCollapsed} />
-            <SidebarItem to="/billing" icon={Receipt} label="Billing & Kasir" active={location.pathname === '/billing'} permission="billing" userRole={userData.role} isCollapsed={isSidebarCollapsed} />
+            <SidebarItem to="/billing" icon={Receipt} label="Kasir & Billing" active={location.pathname === '/billing'} permission="billing" userRole={userData.role} isCollapsed={isSidebarCollapsed} />
             
-            <div className="py-2"></div>
-            {!isSidebarCollapsed && <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest mb-2 px-4">Pelaporan</p>}
+            <div className="py-1"></div>
+            {!isSidebarCollapsed && <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-3 mb-1 mt-2">Laporan & Jadwal</p>}
             <SidebarItem to="/reports" icon={BarChart3} label="Statistik & Laporan" active={location.pathname === '/reports'} permission="reports" userRole={userData.role} isCollapsed={isSidebarCollapsed} />
-            <SidebarItem to="/education" icon={Video} label="Materi Edukasi" active={location.pathname === '/education'} permission="education" userRole={userData.role} isCollapsed={isSidebarCollapsed} />
             <SidebarItem to="/appointments" icon={Calendar} label="Jadwal Reservasi" active={location.pathname === '/appointments'} permission="appointments" userRole={userData.role} isCollapsed={isSidebarCollapsed} />
+            <SidebarItem to="/education" icon={Video} label="Edukasi Pasien" active={location.pathname === '/education'} permission="education" userRole={userData.role} isCollapsed={isSidebarCollapsed} />
           </nav>
 
-          <div className="pt-4 border-t border-white/5 space-y-1">
+          {/* Bottom Settings & User Card */}
+          <div className="pt-3 border-t border-slate-800/80 space-y-1">
             <SidebarItem to="/settings" icon={Settings} label="Pengaturan" active={location.pathname === '/settings'} permission="settings" userRole={userData.role} isCollapsed={isSidebarCollapsed} />
             <SidebarItem to="/security" icon={ShieldCheck} label="Keamanan" active={location.pathname === '/security'} permission="security" userRole={userData.role} isCollapsed={isSidebarCollapsed} />
+
+            {/* Clinician Duty Card */}
+            {!isSidebarCollapsed && (
+              <div className="mt-3 p-2.5 rounded-lg bg-[#0e1628] border border-purple-900/30 flex items-center justify-between">
+                <div className="flex items-center gap-2 overflow-hidden">
+                  <div className="w-7 h-7 rounded-md bg-purple-600/30 text-purple-300 flex items-center justify-center font-bold text-xs shrink-0 border border-purple-500/20">
+                    {userData.fullName?.charAt(0) || 'U'}
+                  </div>
+                  <div className="overflow-hidden">
+                    <p className="text-xs font-semibold text-white truncate leading-tight">{userData.fullName}</p>
+                    <p className="text-[10px] text-pink-400 truncate">{userData.role}</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={onLogout} 
+                  title="Keluar" 
+                  className="p-1 text-slate-400 hover:text-pink-400 transition-colors"
+                >
+                  <LogOut size={14} />
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </aside>
 
-      {/* Main Content */}
+      {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-40 shadow-sm">
+        <header className="h-14 bg-white border-b border-slate-200/80 flex items-center justify-between px-6 sticky top-0 z-40">
           <button 
             onClick={() => setSidebarOpen(!isSidebarOpen)}
-            className="p-2 text-gray-400 hover:bg-gray-100 rounded-lg lg:hidden"
+            className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg lg:hidden"
           >
-            <Menu size={24} />
+            <Menu size={20} />
           </button>
 
-          <div className="flex-1 max-w-md mx-4 hidden md:block">
+          {/* Search Bar */}
+          <div className="flex-1 max-w-sm mx-4 hidden md:block">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
               <input 
                 type="text" 
-                placeholder="Cari pasien atau layanan..." 
-                className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 focus:bg-white focus:border-primary focus:ring-1 focus:ring-primary/20 rounded-lg text-sm transition-all font-medium"
+                placeholder="Cari pasien atau No RM... (Ctrl+K)" 
+                className="w-full pl-8 pr-4 py-1.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-purple-600 focus:ring-1 focus:ring-purple-600 rounded-lg text-xs font-medium transition-all"
               />
             </div>
           </div>
 
-          <div className="flex items-center gap-3 sm:gap-4">
+          {/* Top Actions & Profile */}
+          <div className="flex items-center gap-3">
+            {/* Global Voice Assistant Button */}
             <button 
               type="button"
               onClick={() => setIsGlobalVoiceOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-pink/10 hover:bg-pink text-pink hover:text-white rounded-xl text-xs font-bold transition-all border border-pink/20 shadow-sm active:scale-95 group"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg text-xs font-semibold transition-all border border-purple-200 active:scale-95 group"
               title="Bicara ke Sistem (Dikte Suara & Text to Speech)"
             >
-              <Mic size={15} className="group-hover:animate-pulse" />
-              <span className="hidden sm:inline font-black uppercase tracking-wider text-[11px]">Dikte Suara</span>
+              <Mic size={14} className="group-hover:animate-pulse text-pink-600" />
+              <span className="hidden sm:inline">Dikte Medis</span>
             </button>
 
-            <button className="p-2 text-gray-400 hover:bg-gray-100 rounded-full relative">
-              <Bell size={18} />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-danger rounded-full border-2 border-white"></span>
+            {/* Notification Bell */}
+            <button className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg relative">
+              <Bell size={16} />
+              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-pink-500 rounded-full"></span>
             </button>
-            <div className="h-6 w-px bg-gray-200 mx-1"></div>
-            <div className="flex items-center gap-3 relative mr-2">
-              <div className="text-right hidden sm:block">
-                <p className="text-xs font-bold text-gray-800 leading-none">{userData.fullName}</p>
-                <p className="text-[9px] font-bold text-primary mt-0.5 uppercase tracking-wider">{userData.role}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                  className="w-9 h-9 rounded-lg bg-gray-100 border border-gray-200 shadow-sm overflow-hidden hover:border-primary transition-all flex items-center justify-center p-0.5"
-                >
+
+            <div className="h-5 w-px bg-slate-200 mx-0.5"></div>
+
+            {/* Clinician Profile Dropdown */}
+            <div className="relative">
+              <button 
+                onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                className="flex items-center gap-2 p-1 hover:bg-slate-50 rounded-lg transition-colors"
+              >
+                <div className="w-8 h-8 rounded-lg bg-slate-100 border border-purple-200 overflow-hidden flex items-center justify-center shrink-0">
                   <img 
                     src={userData.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.fullName}`} 
                     alt="User" 
                     referrerPolicy="no-referrer" 
-                    className="w-full h-full object-cover rounded-md"
+                    className="w-full h-full object-cover"
                   />
-                </button>
-                
-                <AnimatePresence>
-                  {isProfileMenuOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute right-0 top-14 w-64 bg-white border border-navy/10 rounded-3xl shadow-2xl p-6 z-50"
-                    >
-                      <div className="flex flex-col items-center text-center mb-6">
-                        <div className="w-20 h-20 rounded-3xl bg-navy-50 p-1 mb-4">
-                          <img 
-                            src={userData.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.fullName}`} 
-                            alt="User" 
-                            className="w-full h-full object-cover rounded-2xl"
-                          />
-                        </div>
-                        <h4 className="text-sm font-black text-navy uppercase tracking-tight">{userData.fullName}</h4>
-                        <p className="text-[10px] font-bold text-gold uppercase tracking-[0.2em] mt-1">{userData.role}</p>
-                      </div>
-                      
-                      <div className="space-y-1 mb-6">
-                        <Link 
-                          to="/profile"
-                          onClick={() => setIsProfileMenuOpen(false)}
-                          className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-navy-50 text-navy/60 hover:text-navy transition-all text-xs font-black uppercase tracking-widest"
-                        >
-                          <Settings size={16} className="text-gold" />
-                          Profil Saya
-                        </Link>
-                        <Link 
-                          to="/security"
-                          onClick={() => setIsProfileMenuOpen(false)}
-                          className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-navy-50 text-navy/60 hover:text-navy transition-all text-xs font-black uppercase tracking-widest"
-                        >
-                          <ShieldCheck size={16} className="text-gold" />
-                          Keamanan
-                        </Link>
-                      </div>
-                      
+                </div>
+                <div className="text-left hidden sm:block">
+                  <p className="text-xs font-semibold text-slate-800 leading-tight">{userData.fullName}</p>
+                  <p className="text-[10px] text-purple-600 font-medium leading-tight">{userData.role}</p>
+                </div>
+              </button>
+              
+              <AnimatePresence>
+                {isProfileMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 6, scale: 0.98 }}
+                    className="absolute right-0 top-11 w-56 bg-white border border-slate-200 rounded-xl shadow-lg p-2 z-50 text-xs"
+                  >
+                    <div className="p-3 border-b border-slate-100 mb-1">
+                      <p className="font-semibold text-slate-900 truncate">{userData.fullName}</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">{userData.role}</p>
+                    </div>
+                    
+                    <div className="space-y-0.5">
+                      <Link 
+                        to="/profile"
+                        onClick={() => setIsProfileMenuOpen(false)}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-slate-50 text-slate-700 transition-colors font-medium"
+                      >
+                        <User size={14} className="text-slate-400" />
+                        Profil Tenaga Medis
+                      </Link>
+                      <Link 
+                        to="/settings"
+                        onClick={() => setIsProfileMenuOpen(false)}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-slate-50 text-slate-700 transition-colors font-medium"
+                      >
+                        <Settings size={14} className="text-slate-400" />
+                        Pengaturan Sistem
+                      </Link>
+                    </div>
+                    
+                    <div className="pt-1 mt-1 border-t border-slate-100">
                       <button 
                         onClick={onLogout}
-                        className="w-full flex items-center justify-center gap-3 p-4 bg-pink-soft text-pink rounded-2xl hover:bg-pink hover:text-white transition-all text-xs font-black uppercase tracking-widest"
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium"
                       >
-                        <LogOut size={16} />
+                        <LogOut size={14} />
                         Keluar
                       </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </header>
@@ -1140,7 +1379,7 @@ const Layout = ({ children, userData, setUserData, onLogout }: { children: React
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
+              transition={{ duration: 0.12 }}
             >
               <Routes>
                 <Route path="/" element={<ProtectedRoute permission="dashboard" userRole={userData.role}><Dashboard /></ProtectedRoute>} />
@@ -1258,8 +1497,9 @@ export default function App() {
 
   if (!isAuthReady) {
     return (
-      <div className="min-h-screen bg-navy flex items-center justify-center dental-pattern">
-        <RefreshCw className="text-pink animate-spin" size={48} />
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center clinical-pattern text-slate-300">
+        <RefreshCw className="text-sky-500 animate-spin mb-3" size={36} />
+        <p className="text-xs font-medium tracking-wider uppercase text-slate-400">Memuat Sistem Rekam Medis...</p>
       </div>
     );
   }
@@ -1273,19 +1513,19 @@ export default function App() {
 
   if (!userData.isApproved) {
     return (
-      <div className="min-h-screen bg-navy flex items-center justify-center p-6 dental-pattern">
-        <div className="bg-white/95 backdrop-blur-xl w-full max-w-md rounded-[3rem] shadow-2xl p-12 text-center border border-white/20">
-          <div className="w-24 h-24 bg-navy-50 text-gold rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-xl">
-            <ShieldCheck size={48} />
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 clinical-pattern">
+        <div className="bg-white w-full max-w-md rounded-2xl shadow-xl p-8 text-center border border-slate-200">
+          <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center mx-auto mb-4 border border-amber-100">
+            <ShieldCheck size={28} />
           </div>
-          <h1 className="text-3xl font-black text-navy uppercase tracking-tighter mb-4">Menunggu Persetujuan</h1>
-          <p className="text-navy/60 font-medium mb-8">Akun Anda sedang ditinjau oleh Super Admin. Anda akan mendapatkan akses penuh setelah akun Anda disetujui.</p>
+          <h1 className="text-xl font-bold text-slate-900 tracking-tight mb-2">Menunggu Verifikasi Kredensial</h1>
+          <p className="text-xs text-slate-500 leading-relaxed mb-6">Akun tenaga medis Anda sedang ditinjau oleh Super Administrator UPTD Puskesmas Kopo. Anda akan mendapatkan akses penuh setelah verifikasi selesai.</p>
           <button 
             onClick={handleLogout}
-            className="w-full py-5 bg-navy text-white rounded-2xl font-black hover:bg-navy-light shadow-xl transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-xs"
+            className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-semibold transition-all flex items-center justify-center gap-2 text-xs"
           >
-            <LogOut size={18} />
-            Keluar
+            <LogOut size={14} />
+            Keluar dari Sistem
           </button>
         </div>
       </div>

@@ -287,18 +287,28 @@ export const PatientList = () => {
   );
 
   return (
-    <div className="p-8">
-      <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
-          <h1 className="text-3xl font-bold text-navy tracking-tight uppercase">Master Data Pasien</h1>
-          <p className="text-navy/40 font-medium mt-1">SIGEMA KOPO : Sistem Kesehatan Gigi Masyarakat Kopo</p>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+              <Users size={13} className="text-purple-600" />
+              Master Pasien
+            </span>
+            <span className="text-slate-300">•</span>
+            <span className="text-xs font-medium text-slate-500">Poli Gigi & Mulut</span>
+            <span className="text-slate-300">•</span>
+            <span className="text-[11px] font-semibold text-pink-600">SIGEMA KOPO</span>
+          </div>
+          <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">Master Data Pasien</h1>
+          <p className="text-xs text-slate-500 mt-0.5">UPTD Puskesmas Kopo · Registrasi & Manajemen Rekam Medis Poli Gigi</p>
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center justify-center gap-3 px-8 py-4 bg-navy text-gold rounded-2xl font-bold hover:bg-navy-light shadow-2xl shadow-navy/40 transition-all uppercase tracking-widest text-xs border border-gold/20"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg text-xs font-semibold shadow-xs transition-all"
         >
-          <Plus size={20} />
-          Tambah Pasien Baru
+          <Plus size={16} />
+          Registrasi Pasien Baru
         </button>
       </header>
 
@@ -310,32 +320,32 @@ export const PatientList = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-navy/60 backdrop-blur-sm" 
+              className="absolute inset-0 bg-slate-950/50 backdrop-blur-xs" 
               onClick={() => setIsDeleteModalOpen(false)}
             />
             <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white w-full max-w-sm rounded-[2.5rem] shadow-2xl relative z-10 p-8 text-center"
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-white w-full max-w-sm rounded-xl shadow-xl relative z-10 p-6 text-center border border-slate-200"
             >
-              <div className="w-20 h-20 bg-red-50 text-danger rounded-3xl flex items-center justify-center mx-auto mb-6">
-                <Trash2 size={40} />
+              <div className="w-12 h-12 bg-red-50 text-red-600 rounded-xl flex items-center justify-center mx-auto mb-4 border border-red-100">
+                <Trash2 size={24} />
               </div>
-              <h3 className="text-xl font-black text-navy uppercase tracking-tight mb-2">Hapus Pasien?</h3>
-              <p className="text-navy/60 text-sm font-medium mb-8">Data yang sudah dihapus tidak dapat dikembalikan lagi.</p>
+              <h3 className="text-base font-bold text-slate-900 tracking-tight mb-1">Hapus Data Pasien?</h3>
+              <p className="text-xs text-slate-500 mb-6">Data pasien dan riwayat pelayanan terkait akan dihapus secara permanen.</p>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <button 
                   onClick={() => setIsDeleteModalOpen(false)}
-                  className="py-4 bg-gray-100 text-navy/60 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-gray-200 transition-all"
+                  className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition-colors"
                 >
                   Batal
                 </button>
                 <button 
                   onClick={confirmDelete}
                   disabled={loading}
-                  className="py-4 bg-danger text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-red-600 transition-all shadow-lg shadow-red-200 flex items-center justify-center gap-2"
+                  className="py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 shadow-sm"
                 >
                   {loading ? <RefreshCw size={14} className="animate-spin" /> : 'Ya, Hapus'}
                 </button>
@@ -345,7 +355,7 @@ export const PatientList = () => {
         )}
       </AnimatePresence>
 
-      {/* Add Patient Modal */}
+      {/* Add / Edit Patient Modal */}
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -353,37 +363,37 @@ export const PatientList = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-navy/60 backdrop-blur-sm" 
+              className="absolute inset-0 bg-slate-950/50 backdrop-blur-xs" 
               onClick={() => setIsModalOpen(false)}
             />
             <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]"
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-white w-full max-w-2xl rounded-xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh] border border-slate-200"
             >
-              <header className="p-8 bg-navy text-white flex items-center justify-between">
+              <header className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold uppercase tracking-tighter">{editingPatientId ? 'Edit Data Pasien' : 'Tambah Pasien Baru'}</h2>
-                  <p className="text-gold text-[10px] font-black uppercase tracking-[0.3em] mt-1">{editingPatientId ? 'Pembaruan Master Data Pasien' : 'Registrasi Master Data Pasien'}</p>
+                  <h2 className="text-base font-bold tracking-tight">{editingPatientId ? 'Edit Data Pasien' : 'Registrasi Pasien Baru'}</h2>
+                  <p className="text-[11px] text-slate-400 mt-0.5">{editingPatientId ? 'Pembaruan data rekam medis pasien' : 'Input data demografi pasien poli gigi'}</p>
                 </div>
-                <button onClick={() => { setIsModalOpen(false); setEditingPatientId(null); }} className="p-2 hover:bg-white/10 rounded-xl transition-all">
-                  <X size={24} />
+                <button onClick={() => { setIsModalOpen(false); setEditingPatientId(null); }} className="p-1.5 text-slate-400 hover:text-white rounded-lg transition-colors">
+                  <X size={18} />
                 </button>
               </header>
 
-              <form onSubmit={handleAddPatient} className="flex-1 overflow-y-auto p-8 space-y-12 custom-scrollbar">
+              <form onSubmit={handleAddPatient} className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar text-xs">
                 {/* Data Pasien */}
-                <div className="space-y-8">
-                  <div className="flex items-center gap-3 border-l-4 border-pink pl-4">
-                    <h3 className="text-lg font-black text-navy uppercase tracking-tight">Identitas Pasien</h3>
+                <div className="space-y-4">
+                  <div className="border-b border-slate-100 pb-2">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">1. Identitas Pasien</h3>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest ml-4">Cara Bayar</label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="font-semibold text-slate-700">Cara Bayar / Asuransi</label>
                       <select 
-                        className="w-full px-8 py-4 bg-navy-50/50 border-2 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-2xl text-sm transition-all font-bold appearance-none"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 focus:bg-white focus:border-sky-600 focus:ring-1 focus:ring-sky-600 rounded-lg transition-all"
                         value={newPatient.paymentMethod}
                         onChange={e => setNewPatient({...newPatient, paymentMethod: e.target.value})}
                       >
@@ -392,30 +402,30 @@ export const PatientList = () => {
                         <option>Gratis</option>
                       </select>
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest ml-4">NIK (16 Digit)</label>
+                    <div className="space-y-1.5">
+                      <label className="font-semibold text-slate-700">NIK (16 Digit)</label>
                       <input 
                         type="text" required maxLength={16}
-                        className="w-full px-8 py-4 bg-navy-50/50 border-2 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-2xl text-sm transition-all font-bold"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 focus:bg-white focus:border-sky-600 focus:ring-1 focus:ring-sky-600 rounded-lg font-mono transition-all"
                         placeholder="3201..."
                         value={newPatient.nik}
                         onChange={e => setNewPatient({...newPatient, nik: e.target.value})}
                       />
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest ml-4">Nama Lengkap</label>
+                    <div className="space-y-1.5">
+                      <label className="font-semibold text-slate-700">Nama Lengkap Pasien</label>
                       <input 
                         type="text" required
-                        className="w-full px-8 py-4 bg-navy-50/50 border-2 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-2xl text-sm transition-all font-bold"
-                        placeholder="Nama sesuai KTP"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 focus:bg-white focus:border-sky-600 focus:ring-1 focus:ring-sky-600 rounded-lg transition-all"
+                        placeholder="Nama sesuai KTP / KK"
                         value={newPatient.name}
                         onChange={e => setNewPatient({...newPatient, name: e.target.value})}
                       />
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest ml-4">Jenis Kelamin</label>
+                    <div className="space-y-1.5">
+                      <label className="font-semibold text-slate-700">Jenis Kelamin</label>
                       <select 
-                        className="w-full px-8 py-4 bg-navy-50/50 border-2 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-2xl text-sm transition-all font-bold appearance-none"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 focus:bg-white focus:border-sky-600 focus:ring-1 focus:ring-sky-600 rounded-lg transition-all"
                         value={newPatient.gender}
                         onChange={e => setNewPatient({...newPatient, gender: e.target.value})}
                       >
@@ -423,31 +433,31 @@ export const PatientList = () => {
                         <option>Perempuan</option>
                       </select>
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest ml-4">Tempat Lahir</label>
+                    <div className="space-y-1.5">
+                      <label className="font-semibold text-slate-700">Tempat Lahir</label>
                       <input 
                         type="text" required
-                        className="w-full px-8 py-4 bg-navy-50/50 border-2 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-2xl text-sm transition-all font-bold"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 focus:bg-white focus:border-sky-600 focus:ring-1 focus:ring-sky-600 rounded-lg transition-all"
                         placeholder="Kota Lahir"
                         value={newPatient.birthPlace}
                         onChange={e => setNewPatient({...newPatient, birthPlace: e.target.value})}
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest ml-4">Tanggal Lahir</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <label className="font-semibold text-slate-700">Tanggal Lahir</label>
                         <input 
                           type="date" required
-                          className="w-full px-8 py-4 bg-navy-50/50 border-2 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-2xl text-sm transition-all font-bold"
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 focus:bg-white focus:border-sky-600 focus:ring-1 focus:ring-sky-600 rounded-lg transition-all"
                           value={newPatient.birthDate}
                           onChange={e => setNewPatient({...newPatient, birthDate: e.target.value})}
                         />
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-navy/40 uppercase tracking-widest ml-4">Umur</label>
+                      <div className="space-y-1.5">
+                        <label className="font-semibold text-slate-700">Umur (Tahun)</label>
                         <input 
                           type="text" readOnly
-                          className="w-full px-8 py-4 bg-navy-50/20 border-2 border-transparent rounded-2xl text-sm font-bold text-navy/40"
+                          className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-600 font-mono"
                           value={newPatient.age}
                         />
                       </div>
@@ -656,7 +666,7 @@ export const PatientList = () => {
                   <button 
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="px-10 py-5 bg-white border-2 border-navy/5 text-navy/40 rounded-2xl font-black hover:border-pink hover:text-pink transition-all uppercase tracking-widest text-xs"
+                    className="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold text-xs tracking-wider transition-colors"
                   >
                     Batal
                   </button>
@@ -667,26 +677,27 @@ export const PatientList = () => {
         )}
       </AnimatePresence>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="p-4 border-b border-gray-100 bg-gray-50 flex flex-wrap items-center justify-between gap-4">
+      <div className="bg-white rounded-xl shadow-xs border border-slate-200 overflow-hidden">
+        <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <span className="text-sm font-semibold text-gray-700">Show</span>
-            <select className="bg-white border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+            <span className="text-xs font-semibold text-slate-600">Tampilkan</span>
+            <select className="bg-white border border-slate-300 rounded-md px-2.5 py-1 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs font-mono">
               <option>10</option>
               <option>25</option>
               <option>50</option>
+              <option>100</option>
             </select>
-            <span className="text-sm font-semibold text-gray-700">entries</span>
+            <span className="text-xs text-slate-500">data per halaman</span>
           </div>
           
           <div className="relative w-full md:w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
             <input 
               type="text" 
-              placeholder="Cari NIK, Nama, atau No RM..." 
+              placeholder="Cari NIK, Nama Pasien, atau No RM..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+              className="w-full pl-9 pr-4 py-1.5 bg-white border border-slate-300 rounded-lg text-xs placeholder:text-slate-400 text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all shadow-2xs"
             />
           </div>
         </div>
@@ -694,65 +705,78 @@ export const PatientList = () => {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-50 text-gray-600 text-[11px] uppercase tracking-wider font-bold border-b border-gray-200">
-                <th className="px-6 py-4 border-r border-gray-200 text-center w-12">#</th>
-                <th className="px-6 py-4 border-r border-gray-200">No RM</th>
-                <th className="px-6 py-4 border-r border-gray-200">Pasien</th>
-                <th className="px-8 py-4 border-r border-gray-200">Asuransi</th>
-                <th className="px-6 py-4 border-r border-gray-200">Kontak</th>
-                <th className="px-6 py-4 text-center">Aksi</th>
+              <tr className="bg-slate-50 text-slate-600 text-[11px] uppercase tracking-wider font-semibold border-b border-slate-200">
+                <th className="px-4 py-3.5 text-center w-12 text-slate-400">#</th>
+                <th className="px-4 py-3.5 font-semibold">No. RM</th>
+                <th className="px-5 py-3.5 font-semibold">Identitas Pasien</th>
+                <th className="px-4 py-3.5 font-semibold">Penjamin</th>
+                <th className="px-4 py-3.5 font-semibold">Kontak & Alamat</th>
+                <th className="px-4 py-3.5 text-center font-semibold">Tindakan Klinis</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-slate-100 text-xs">
               {filteredPatients.map((patient, index) => (
-                <tr key={patient.id} className="hover:bg-blue-50/50 transition-colors">
-                  <td className="px-6 py-4 text-center text-[10px] font-bold text-gray-400 border-r border-gray-100">{index + 1}</td>
-                  <td className="px-6 py-4 border-r border-gray-100">
-                    <p className="text-[10px] font-bold text-primary tracking-tight">{patient.rmNumber || '-'}</p>
+                <tr key={patient.id} className="hover:bg-purple-50/30 transition-colors group">
+                  <td className="px-4 py-3 text-center font-mono text-[11px] text-slate-400">{index + 1}</td>
+                  <td className="px-4 py-3">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded font-mono font-semibold text-[11px] bg-slate-100 text-slate-800 border border-slate-200">
+                      {patient.rmNumber || '-'}
+                    </span>
                   </td>
-                  <td className="px-6 py-4 border-r border-gray-100">
-                    <div className="space-y-1">
-                      <p className="text-xs font-bold text-gray-800">{patient.name}</p>
-                      <div className="flex flex-wrap gap-1">
-                        <span className="text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-bold">{patient.nik}</span>
-                        <span className="text-[9px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-bold uppercase">{patient.birthPlace}, {patient.birthDate}</span>
+                  <td className="px-5 py-3">
+                    <div className="space-y-0.5">
+                      <p className="font-semibold text-slate-900 group-hover:text-purple-700 transition-colors">{patient.name}</p>
+                      <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                        <span className="font-mono text-slate-600">NIK: {patient.nik || '-'}</span>
+                        <span>•</span>
+                        <span>{patient.gender === 'L' ? 'Laki-laki' : 'Perempuan'}</span>
+                        {patient.birthDate && (
+                          <>
+                            <span>•</span>
+                            <span>{patient.birthDate}</span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 border-r border-gray-100">
+                  <td className="px-4 py-3">
                     <span className={cn(
-                      "text-[9px] font-bold px-2 py-1 rounded-md uppercase tracking-wider text-white",
-                      patient.paymentMethod === 'BPJS' ? "bg-success" : "bg-primary"
+                      "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide uppercase",
+                      patient.paymentMethod === 'BPJS' 
+                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200" 
+                        : "bg-pink-50 text-pink-700 border border-pink-200"
                     )}>
-                      {patient.paymentMethod === 'BPJS' ? 'BPJS' : 'Umum'}
+                      <span className={cn("w-1.5 h-1.5 rounded-full", patient.paymentMethod === 'BPJS' ? "bg-emerald-500" : "bg-pink-500")} />
+                      {patient.paymentMethod === 'BPJS' ? 'BPJS PBI/Non-PBI' : 'Umum / Mandiri'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 border-r border-gray-100">
-                    <p className="text-[10px] text-gray-600 font-bold">{patient.phone || '-'}</p>
+                  <td className="px-4 py-3 text-slate-600">
+                    <p className="font-mono text-[11px] text-slate-700">{patient.phone || '-'}</p>
+                    <p className="text-[11px] text-slate-400 truncate max-w-xs">{patient.address || 'Bandung'}</p>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-3">
                     <div className="flex items-center justify-center gap-2">
                       <button 
                         onClick={() => navigate(`/records?patientId=${patient.id}`)}
-                        className="px-3 py-1.5 bg-primary text-white rounded text-[10px] font-bold hover:bg-primary-dark transition-all flex items-center gap-1.5 shadow-sm shadow-primary/10 uppercase tracking-wider"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-md text-xs font-medium shadow-2xs transition-all"
                       >
-                        <Stethoscope size={12} />
-                        Layani
+                        <Stethoscope size={13} />
+                        <span>Pemeriksaan</span>
                       </button>
-                      <div className="flex items-center gap-1 border-l border-gray-200 pl-2">
+                      <div className="flex items-center gap-1 border-l border-slate-200 pl-2">
                         <button 
                           onClick={() => handleEdit(patient)}
-                          className="p-1.5 text-gray-400 hover:text-primary hover:bg-gray-100 rounded transition-all"
-                          title="Edit"
+                          className="p-1.5 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                          title="Edit Pasien"
                         >
-                          <Edit3 size={16} />
+                          <Edit3 size={15} />
                         </button>
                         <button 
                           onClick={() => handleDelete(patient.id)}
-                          className="p-1.5 text-gray-400 hover:text-danger hover:bg-red-50 rounded transition-all"
-                          title="Hapus"
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                          title="Hapus Pasien"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={15} />
                         </button>
                       </div>
                     </div>
@@ -761,10 +785,20 @@ export const PatientList = () => {
               ))}
               {filteredPatients.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-8 py-20 text-center">
-                    <div className="flex flex-col items-center gap-4 opacity-20">
-                      <Users size={64} />
-                      <p className="text-sm font-black uppercase tracking-widest">Belum ada data pasien</p>
+                  <td colSpan={6} className="px-8 py-16 text-center">
+                    <div className="flex flex-col items-center justify-center text-slate-400 space-y-2">
+                      <Users size={40} className="stroke-[1.5] text-slate-300 mb-1" />
+                      <p className="text-sm font-semibold text-slate-600">Tidak ada data pasien yang cocok</p>
+                      <p className="text-xs text-slate-400 max-w-sm">Periksa kembali kata kunci pencarian Anda atau tambahkan pasien baru ke dalam master data.</p>
+                      <button
+                        onClick={() => {
+                          setEditingPatientId(null);
+                          setIsModalOpen(true);
+                        }}
+                        className="mt-2 text-xs font-semibold text-purple-600 hover:text-pink-600 hover:underline"
+                      >
+                        + Daftarkan Pasien Baru
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -773,11 +807,12 @@ export const PatientList = () => {
           </table>
         </div>
 
-        <div className="p-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-          <p className="text-xs text-gray-500 font-semibold uppercase tracking-tight">Showing {filteredPatients.length} of {patients.length} entries</p>
-          <div className="flex gap-2">
-            <button className="px-4 py-1.5 bg-white border border-gray-300 rounded text-[10px] font-bold text-gray-400 cursor-not-allowed uppercase tracking-wider transition-all">Previous</button>
-            <button className="px-4 py-1.5 bg-white border border-gray-300 rounded text-[10px] font-bold text-gray-700 hover:bg-gray-50 hover:border-primary hover:text-primary transition-all shadow-sm uppercase tracking-wider">Next</button>
+        <div className="p-3.5 bg-slate-50/70 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <p className="text-slate-500 font-medium">Menampilkan <span className="font-semibold text-slate-700 font-mono">{filteredPatients.length}</span> dari <span className="font-semibold text-slate-700 font-mono">{patients.length}</span> rekam pasien terdaftar</p>
+          <div className="flex items-center gap-1.5">
+            <button className="px-3 py-1 bg-white border border-slate-200 rounded text-slate-400 text-xs font-medium cursor-not-allowed">Sebelumnya</button>
+            <span className="px-2.5 py-1 bg-purple-50 text-purple-700 border border-purple-200 rounded font-semibold font-mono text-xs">1</span>
+            <button className="px-3 py-1 bg-white border border-slate-200 rounded text-slate-600 text-xs font-medium hover:bg-slate-50 transition-colors">Selanjutnya</button>
           </div>
         </div>
       </div>

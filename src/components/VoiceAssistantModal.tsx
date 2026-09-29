@@ -144,7 +144,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
         {/* Header */}
         <div className="px-6 py-5 border-b border-navy/10 flex items-center justify-between bg-navy-50/50">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-pink text-white rounded-2xl shadow-md shadow-pink/20">
+            <div className="p-2.5 bg-gradient-to-tr from-purple-600 to-pink-500 text-white rounded-2xl shadow-md shadow-purple-500/20">
               <Mic size={20} className={isListening ? 'animate-bounce' : ''} />
             </div>
             <div>
@@ -174,7 +174,7 @@ export const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
               className={`w-20 h-20 rounded-full flex items-center justify-center transition-all shadow-xl active:scale-95 ${
                 isListening 
                   ? 'bg-rose-500 text-white animate-pulse ring-8 ring-rose-200 shadow-rose-500/40' 
-                  : 'bg-pink text-white hover:bg-pink-dark shadow-pink/30 hover:scale-105'
+                  : 'bg-gradient-to-tr from-purple-600 to-pink-500 text-white hover:from-purple-700 hover:to-pink-600 shadow-purple-500/30 hover:scale-105'
               }`}
             >
               {isListening ? <Mic size={34} className="animate-bounce" /> : <Mic size={34} />}

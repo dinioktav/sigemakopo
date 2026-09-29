@@ -157,27 +157,29 @@ export const Login = ({ onLogin }: LoginProps) => {
 
   if (isForgotPassword) {
     return (
-      <div className="min-h-screen bg-navy flex items-center justify-center p-6 transition-colors duration-500 relative overflow-hidden dental-pattern">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-pink/10 rounded-full blur-[150px] -z-10 animate-pulse"></div>
-        <div className="bg-white/95 backdrop-blur-xl w-full max-w-md rounded-[3rem] shadow-2xl overflow-hidden border border-white/20 relative z-10">
-          <div className="p-12 bg-gradient-to-br from-pink-soft/50 to-white border-b border-pink-soft/30 text-center">
-            <div className="w-24 h-24 bg-navy rounded-[2rem] flex items-center justify-center text-pink font-black text-5xl mx-auto mb-8 shadow-2xl shadow-navy/40 transform -rotate-6">
+      <div className="min-h-screen bg-[#090d1a] flex items-center justify-center p-6 relative overflow-hidden clinical-pattern">
+        <div className="absolute top-1/4 -left-20 w-[500px] h-[500px] bg-purple-600/15 rounded-full blur-[140px] pointer-events-none"></div>
+        <div className="absolute bottom-1/4 -right-20 w-[500px] h-[500px] bg-pink-600/15 rounded-full blur-[140px] pointer-events-none"></div>
+
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200/90 overflow-hidden relative z-10">
+          <div className="p-8 bg-gradient-to-b from-purple-50/50 to-white border-b border-slate-100 text-center">
+            <div className="w-14 h-14 bg-gradient-to-tr from-purple-600 via-indigo-600 to-pink-500 rounded-xl flex items-center justify-center text-white font-bold text-2xl mx-auto mb-4 shadow-md shadow-purple-600/25">
               S
             </div>
-            <h1 className="text-4xl font-black text-navy tracking-tighter uppercase">Lupa Password</h1>
-            <p className="text-xs text-navy-light/40 mt-3 font-black uppercase tracking-[0.3em]">Pulihkan Akses Anda</p>
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Pemulihan Kata Sandi</h1>
+            <p className="text-xs text-slate-500 mt-1">Masukkan email kedinasan untuk menerima tautan pemulihan.</p>
           </div>
 
-          <form onSubmit={handleForgotPassword} className="p-12 space-y-8">
-            <div className="space-y-2">
-              <label className="text-xs font-black text-navy/70 uppercase tracking-wider">Email Terdaftar</label>
+          <form onSubmit={handleForgotPassword} className="p-8 space-y-5">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700">Email Akun Medis</label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-navy/30" size={18} />
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={17} />
                 <input 
                   type="email" 
                   required
-                  className="w-full pl-12 pr-4 py-4 bg-navy-50 border-2 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-2xl text-sm transition-all font-medium"
-                  placeholder="email@contoh.com"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-purple-600 focus:ring-1 focus:ring-purple-600 rounded-lg text-sm transition-all"
+                  placeholder="nama@puskesmaskopo.id"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -185,36 +187,32 @@ export const Login = ({ onLogin }: LoginProps) => {
             </div>
 
             {error && (
-              <div className="p-4 bg-pink-soft/50 border border-pink/20 rounded-2xl animate-in zoom-in duration-300">
-                <p className="text-[10px] text-pink font-black text-center uppercase tracking-tighter leading-relaxed">
-                  {error}
-                </p>
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600 font-medium">
+                {error}
               </div>
             )}
             {message && (
-              <div className="p-4 bg-green-50 border border-green-200 rounded-2xl animate-in zoom-in duration-300">
-                <p className="text-[10px] text-green-600 font-black text-center uppercase tracking-tighter leading-relaxed">
-                  {message}
-                </p>
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-700 font-medium">
+                {message}
               </div>
             )}
 
             <button 
               type="submit"
               disabled={loading}
-              className="w-full py-5 bg-navy text-white rounded-2xl font-black hover:bg-navy-light shadow-xl shadow-navy/20 transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-xs disabled:opacity-50"
+              className="w-full py-3 bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white rounded-lg font-semibold shadow-md shadow-purple-600/25 transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wider disabled:opacity-50"
             >
-              {loading ? <RefreshCw className="animate-spin" size={18} /> : <Mail size={18} className="text-pink" />}
-              Kirim Link Pemulihan
+              {loading ? <RefreshCw className="animate-spin" size={16} /> : <Mail size={16} />}
+              Kirim Tautan Pemulihan
             </button>
 
             <button 
               type="button"
               onClick={() => setIsForgotPassword(false)}
-              className="w-full text-xs font-black text-navy/60 hover:text-pink transition-colors flex items-center justify-center gap-2 uppercase tracking-wider"
+              className="w-full text-xs font-medium text-slate-500 hover:text-purple-600 transition-colors flex items-center justify-center gap-1.5 pt-2"
             >
               <ArrowLeft size={14} />
-              Kembali ke Login
+              Kembali ke Halaman Masuk
             </button>
           </form>
         </div>
@@ -223,70 +221,128 @@ export const Login = ({ onLogin }: LoginProps) => {
   }
 
   return (
-    <div className="min-h-screen bg-navy flex items-center justify-center p-6 transition-colors duration-500 relative overflow-hidden dental-pattern">
-      {/* Background Abstract Shapes */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-pink/10 rounded-full blur-[150px] -z-10 animate-pulse"></div>
-      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-pink-light/5 rounded-full blur-[150px] -z-10"></div>
+    <div className="min-h-screen bg-[#090d1a] flex flex-col justify-center items-center p-6 relative overflow-hidden clinical-pattern">
+      {/* Background Soft Glows in Purple & Pink */}
+      <div className="absolute top-1/4 -left-20 w-[600px] h-[500px] bg-purple-600/15 rounded-full blur-[160px] pointer-events-none"></div>
+      <div className="absolute bottom-1/4 -right-20 w-[600px] h-[500px] bg-pink-600/15 rounded-full blur-[160px] pointer-events-none"></div>
+      <div className="absolute top-10 right-1/4 w-[300px] h-[300px] bg-indigo-900/25 rounded-full blur-[120px] pointer-events-none"></div>
       
-      <div className="bg-white/95 backdrop-blur-xl w-full max-w-md rounded-[3rem] shadow-2xl overflow-hidden border border-white/20 relative z-10">
-        <div className="p-12 bg-gradient-to-br from-pink-soft/50 to-white border-b border-pink-soft/30 text-center relative overflow-hidden">
-          {/* Decorative elements */}
-          <div className="absolute -top-10 -right-10 w-32 h-32 bg-pink-light/20 rounded-full blur-3xl"></div>
-          <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-navy/5 rounded-full blur-3xl"></div>
-          
-          <div className="w-24 h-24 bg-navy rounded-[2rem] flex items-center justify-center text-pink font-black text-5xl mx-auto mb-8 shadow-2xl shadow-navy/40 relative z-10 transform -rotate-6 hover:rotate-0 transition-transform duration-500">
+      {/* Main Container */}
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200/90 overflow-hidden relative z-10">
+        
+        {/* Institutional Branding Header */}
+        <div className="px-8 pt-8 pb-6 bg-gradient-to-b from-purple-50/50 via-slate-50/20 to-white border-b border-slate-100 text-center">
+          <div className="inline-flex items-center justify-center w-13 h-13 rounded-xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-pink-500 text-white font-bold text-2xl shadow-lg shadow-purple-900/30 mb-3.5">
             S
           </div>
-          <h1 className="text-4xl font-black text-navy tracking-tighter relative z-10 uppercase">SIGEMA KOPO</h1>
-          <p className="text-xs text-navy-light/40 mt-3 font-black relative z-10 uppercase tracking-[0.3em]">
-            {isRegistering ? 'Pendaftaran Akun Baru' : 'SIGEMA KOPO : Sistem Kesehatan Gigi Masyarakat Kopo'}
-          </p>
+          <h1 className="text-xl font-bold tracking-tight text-slate-900">SIGEMA KOPO</h1>
+          <div className="mt-1 flex items-center justify-center gap-1.5">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+              Rekam Medis Gigi & Mulut
+            </span>
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-pink-50 text-pink-700 border border-pink-200">
+              UPTD Kopo
+            </span>
+          </div>
+          <div className="mt-2 text-[11px] text-slate-400 flex items-center justify-center gap-1.5">
+            <span>UPTD Puskesmas Kopo</span>
+            <span aria-hidden="true">·</span>
+            <span>Standar Kemenkes RI</span>
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-12 space-y-6">
+        {/* Tab Switcher: Masuk vs Registrasi */}
+        <div className="px-8 pt-6 pb-2">
+          <div className="flex bg-slate-100 p-1 rounded-lg">
+            <button
+              type="button"
+              onClick={() => { setIsRegistering(false); generateCaptcha(); }}
+              className={cn(
+                "flex-1 py-2 text-xs font-semibold rounded-md transition-all",
+                !isRegistering 
+                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-xs" 
+                  : "text-slate-600 hover:text-slate-900"
+              )}
+            >
+              Masuk Sistem
+            </button>
+            <button
+              type="button"
+              onClick={() => { setIsRegistering(true); generateCaptcha(); }}
+              className={cn(
+                "flex-1 py-2 text-xs font-semibold rounded-md transition-all",
+                isRegistering 
+                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-xs" 
+                  : "text-slate-600 hover:text-slate-900"
+              )}
+            >
+              Daftar Nakes / Akun
+            </button>
+          </div>
+        </div>
+
+        {/* Form Body */}
+        <form onSubmit={handleSubmit} className="p-8 pt-4 space-y-4">
           {isRegistering && (
-            <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-              <label className="text-xs font-black text-navy/70 uppercase tracking-wider">Nama Lengkap</label>
+            <div className="space-y-1.5 animate-in fade-in duration-200">
+              <label className="text-xs font-medium text-slate-700">Nama Lengkap & Gelar</label>
               <input 
                 type="text" 
                 required
-                className="w-full p-4 bg-navy-50 border-2 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-2xl text-sm transition-all font-medium"
-                placeholder="Masukkan nama lengkap"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-purple-600 focus:ring-1 focus:ring-purple-600 rounded-lg text-sm transition-all"
+                placeholder="cth: drg. Ahmad Fauzi / Nita, A.Md.Kes"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
               />
             </div>
           )}
 
-          <div className="space-y-2">
-            <label className="text-xs font-black text-navy/70 uppercase tracking-wider">Email</label>
-            <input 
-              type="email" 
-              required
-              className="w-full p-4 bg-navy-50 border-2 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-2xl text-sm transition-all font-medium"
-              placeholder="email@contoh.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-slate-700">Email Akun Medis</label>
+            <div className="relative">
+              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+              <input 
+                type="email" 
+                required
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-purple-600 focus:ring-1 focus:ring-purple-600 rounded-lg text-sm transition-all"
+                placeholder="nama@puskesmaskopo.id"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-xs font-black text-navy/70 uppercase tracking-wider">Password</label>
-            <input 
-              type="password" 
-              required
-              className="w-full p-4 bg-navy-50 border-2 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-2xl text-sm transition-all font-medium"
-              placeholder="Masukkan password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium text-slate-700">Kata Sandi</label>
+              {!isRegistering && (
+                <button 
+                  type="button"
+                  onClick={() => setIsForgotPassword(true)}
+                  className="text-[11px] font-medium text-purple-600 hover:text-pink-600 transition-colors"
+                >
+                  Lupa Kata Sandi?
+                </button>
+              )}
+            </div>
+            <div className="relative">
+              <Key className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+              <input 
+                type="password" 
+                required
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-purple-600 focus:ring-1 focus:ring-purple-600 rounded-lg text-sm transition-all"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
           </div>
 
           {isRegistering && (
-            <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-              <label className="text-xs font-black text-navy/70 uppercase tracking-wider">Pilih Tenaga / Role</label>
+            <div className="space-y-1.5 animate-in fade-in duration-200">
+              <label className="text-xs font-medium text-slate-700">Jabatan / Profesi</label>
               <select 
-                className="w-full p-4 bg-navy-50 border-2 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-2xl text-sm transition-all font-medium appearance-none"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-purple-600 focus:ring-1 focus:ring-purple-600 rounded-lg text-sm transition-all"
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
               >
@@ -298,34 +354,25 @@ export const Login = ({ onLogin }: LoginProps) => {
             </div>
           )}
 
-          <div className="space-y-4">
-            <div className="flex items-center justify-between ml-4">
-              <label className="text-xs font-black text-navy/70 uppercase tracking-wider">Verifikasi Keamanan</label>
-              <span className="text-[10px] font-bold text-pink animate-pulse">Wajib Diisi</span>
+          {/* Captcha Security */}
+          <div className="pt-2 space-y-2">
+            <div className="flex items-center justify-between text-xs text-slate-600">
+              <span className="font-medium">Verifikasi Keamanan</span>
+              <span className="text-[11px] text-purple-600 font-mono">Kode Akses</span>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="flex-1 bg-navy-dark h-20 rounded-2xl flex items-center justify-center select-none shadow-2xl relative overflow-hidden group">
-                {/* Visual noise/security pattern background */}
-                <div className="absolute inset-0 opacity-10 pointer-events-none" 
-                     style={{ backgroundImage: 'radial-gradient(circle, #db2777 1px, transparent 1px)', backgroundSize: '10px 10px' }}></div>
-                
-                <span className="text-3xl font-black text-white tracking-[0.6em] italic opacity-100 drop-shadow-[0_0_10px_rgba(219,39,119,0.5)] transform -skew-x-12 select-none">
+            <div className="flex items-center gap-2">
+              <div className="flex-1 bg-slate-900 h-12 rounded-lg flex items-center justify-center select-none shadow-xs border border-purple-900/30">
+                <span className="text-xl font-bold font-mono tracking-[0.4em] text-pink-400 select-none">
                   {captchaText}
                 </span>
-                
-                {/* Decorative barrier lines */}
-                <div className="absolute inset-0 flex flex-col justify-around pointer-events-none opacity-20">
-                  <div className="h-[1px] w-full bg-pink"></div>
-                  <div className="h-[1px] w-full bg-pink translate-x-10"></div>
-                </div>
               </div>
               <button 
-                type="button"
+                type="button" 
                 onClick={generateCaptcha}
-                className="p-5 bg-white text-navy border-2 border-navy/5 rounded-2xl hover:bg-navy hover:text-white transition-all shadow-xl group"
-                title="Ganti Kode"
+                className="h-12 w-12 flex items-center justify-center bg-slate-50 hover:bg-purple-50 text-slate-600 hover:text-purple-600 border border-slate-200 rounded-lg transition-colors"
+                title="Ganti Kode Keamanan"
               >
-                <RefreshCw size={24} className="group-hover:rotate-180 transition-transform duration-500" />
+                <RefreshCw size={16} />
               </button>
             </div>
             <div className="relative">
@@ -334,45 +381,52 @@ export const Login = ({ onLogin }: LoginProps) => {
                 required
                 autoComplete="off"
                 className={cn(
-                  "w-full p-5 bg-navy-50 border-2 border-transparent focus:bg-white focus:border-pink focus:ring-0 rounded-2xl text-lg transition-all text-center font-black tracking-[0.3em] uppercase",
-                  error && "border-pink bg-pink-soft/50 shadow-lg shadow-pink/10"
+                  "w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-purple-600 focus:ring-1 focus:ring-purple-600 rounded-lg text-sm font-mono tracking-widest uppercase transition-all",
+                  error && "border-red-300 bg-red-50/50"
                 )}
-                placeholder="MASUKKAN KODE"
+                placeholder="Ketik kode di atas"
                 value={captchaInput}
                 onChange={(e) => setCaptchaInput(e.target.value)}
               />
               {captchaInput && captchaInput.toUpperCase() === captchaText && (
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-green-500 animate-in zoom-in duration-300">
-                  <ShieldCheck size={24} />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-600">
+                  <ShieldCheck size={18} />
                 </div>
               )}
             </div>
           </div>
 
           {error && (
-            <div className="p-4 bg-pink-soft/50 border border-pink/20 rounded-2xl animate-in zoom-in duration-300">
-              <p className="text-[10px] text-pink font-black text-center uppercase tracking-tighter leading-relaxed">
-                {error}
-              </p>
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600 font-medium">
+              {error}
             </div>
           )}
 
           {message && (
-            <div className="p-4 bg-green-50 border border-green-200 rounded-2xl animate-in zoom-in duration-300">
-              <p className="text-[10px] text-green-600 font-black text-center uppercase tracking-tighter leading-relaxed">
-                {message}
-              </p>
+            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-700 font-medium">
+              {message}
             </div>
           )}
 
-          <div className="space-y-3">
+          <div className="pt-2 space-y-2.5">
             <button 
               type="submit"
               disabled={loading}
-              className="w-full py-5 bg-navy text-white rounded-2xl font-black hover:bg-navy-light shadow-xl shadow-navy/20 transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-xs disabled:opacity-50"
+              className="w-full py-3 bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white rounded-lg font-semibold shadow-md shadow-purple-600/25 transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wider disabled:opacity-50"
             >
-              {loading ? <RefreshCw className="animate-spin" size={18} /> : (isRegistering ? <UserPlus size={18} className="text-pink" /> : <LogIn size={18} className="text-pink" />)}
-              {isRegistering ? 'Daftar Sekarang' : 'Masuk ke Sistem'}
+              {loading ? (
+                <RefreshCw className="animate-spin" size={16} />
+              ) : isRegistering ? (
+                <>
+                  <UserPlus size={16} />
+                  Daftarkan Akun
+                </>
+              ) : (
+                <>
+                  <LogIn size={16} />
+                  Masuk ke Sistem
+                </>
+              )}
             </button>
 
             {!isRegistering && (
@@ -380,56 +434,26 @@ export const Login = ({ onLogin }: LoginProps) => {
                 type="button"
                 onClick={handleGoogleLogin}
                 disabled={loading}
-                className="w-full py-5 bg-white text-navy border-2 border-navy/10 rounded-2xl font-black hover:bg-navy-50 transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-xs disabled:opacity-50"
+                className="w-full py-2.5 bg-white text-slate-700 border border-slate-200 hover:border-purple-300 hover:bg-purple-50/30 rounded-lg font-medium transition-all flex items-center justify-center gap-2 text-xs disabled:opacity-50"
               >
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
-                Masuk dengan Google
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-4 h-4" />
+                Masuk dengan Akun Google
               </button>
             )}
           </div>
 
-          <div className="pt-4 flex flex-col items-center gap-4">
-            <div className="flex flex-col items-center gap-2">
-              <button 
-                type="button"
-                onClick={() => {
-                  setIsRegistering(!isRegistering);
-                  generateCaptcha();
-                }}
-                className="text-xs font-black text-navy/60 hover:text-pink transition-colors flex items-center gap-2 uppercase tracking-wider"
-              >
-                {isRegistering ? (
-                  <>
-                    <ArrowLeft size={14} />
-                    Sudah punya akun? Login
-                  </>
-                ) : (
-                  <>
-                    Belum punya akun? Buat Akun
-                    <UserPlus size={14} />
-                  </>
-                )}
-              </button>
-
-              {!isRegistering && (
-                <button 
-                  type="button"
-                  onClick={() => setIsForgotPassword(true)}
-                  className="text-[10px] font-black text-pink hover:text-pink-dark transition-colors uppercase tracking-widest flex items-center gap-2"
-                >
-                  <Key size={12} />
-                  Lupa Kata Sandi?
-                </button>
-              )}
-            </div>
-            
-            <div className="flex items-center justify-center gap-2 text-[10px] text-navy/30 font-bold uppercase tracking-widest">
-              <ShieldCheck size={12} />
-              <span>Terintegrasi dengan SATUSEHAT</span>
-            </div>
+          {/* Footer Trust Markers */}
+          <div className="pt-4 border-t border-slate-100 flex items-center justify-center gap-2 text-[11px] text-slate-400">
+            <ShieldCheck size={14} className="text-purple-600" />
+            <span>Kemenkes RI · Enkripsi Standar Medis SATUSEHAT</span>
           </div>
         </form>
       </div>
+
+      {/* Institutional Legal Footer */}
+      <footer className="mt-8 text-center text-xs text-slate-400">
+        <p>© 2026 UPTD Puskesmas Kopo. Seluruh hak cipta dilindungi.</p>
+      </footer>
     </div>
   );
 };

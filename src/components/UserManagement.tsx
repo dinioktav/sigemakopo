@@ -105,7 +105,7 @@ export const UserManagement = () => {
   return (
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex bg-navy-50 p-1 rounded-2xl w-fit">
+        <div className="flex bg-slate-100 p-1 rounded-xl w-fit border border-slate-200">
           {[
             { id: 'pending', label: 'Menunggu' },
             { id: 'approved', label: 'Disetujui' },
@@ -115,8 +115,8 @@ export const UserManagement = () => {
               key={t.id}
               onClick={() => setFilter(t.id as any)}
               className={cn(
-                "px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all",
-                filter === t.id ? "bg-navy text-white shadow-lg" : "text-navy/40 hover:text-navy"
+                "px-5 py-1.5 rounded-lg text-xs font-semibold transition-all",
+                filter === t.id ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-xs" : "text-slate-500 hover:text-slate-900"
               )}
             >
               {t.label}
