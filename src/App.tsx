@@ -611,9 +611,23 @@ const Dashboard = () => {
                       </td>
                       <td className="px-5 py-3.5 font-medium text-slate-600">{record.visitDate || '-'}</td>
                       <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-2 font-mono text-[11px]">
-                          <span className="text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100">D:{dmft}</span>
-                          <span className="text-pink-700 bg-pink-50 px-1.5 py-0.5 rounded border border-pink-100">O:{ohis}</span>
+                        <div className="flex items-center gap-1.5 font-mono text-[11px]">
+                          <span className="text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100" title={`DMF-T: ${dmft}`}>
+                            D:{dmft}
+                          </span>
+                          {(() => {
+                            const ohisCat = record.indices?.ohis?.category || (ohis <= 1.2 ? 'Baik' : ohis <= 3.0 ? 'Sedang' : 'Buruk');
+                            const badgeColor = ohis <= 1.2 
+                              ? 'text-emerald-700 bg-emerald-50 border-emerald-200' 
+                              : ohis <= 3.0 
+                                ? 'text-amber-700 bg-amber-50 border-amber-200' 
+                                : 'text-rose-700 bg-rose-50 border-rose-200';
+                            return (
+                              <span className={cn("px-1.5 py-0.5 rounded border flex items-center gap-1 font-semibold", badgeColor)} title={`OHI-S: ${ohis} (Kriteria: ${ohisCat})`}>
+                                O:{ohis} <span className="text-[9px] font-sans font-bold uppercase">{ohisCat}</span>
+                              </span>
+                            );
+                          })()}
                         </div>
                       </td>
                       <td className="px-5 py-3.5">
@@ -724,7 +738,9 @@ const Reports = () => {
       lines.push(`[ANAMNESIS] Medis: ${r.anamnesis.medicalHistory?.isHealthy ? 'Sehat' : 'Ada Riwayat'}, Keluhan: ${r.anamnesis.dentalHistory?.reason || '-'}`);
     }
     if (r.indices) {
-      lines.push(`[INDEKS] DMF-T: ${r.indices.dmft?.total || 0}, OHI-S: ${r.indices.ohis?.total || 0}`);
+      const ohisVal = r.indices.ohis?.total || 0;
+      const ohisCat = r.indices.ohis?.category || (ohisVal <= 1.2 ? 'Baik' : ohisVal <= 3.0 ? 'Sedang' : 'Buruk');
+      lines.push(`[INDEKS] DMF-T: ${r.indices.dmft?.total || 0}, OHI-S: ${ohisVal} (${ohisCat})`);
     }
     if (r.askesgilut?.diagnoses) {
       const diag = r.askesgilut.diagnoses.map((d: any) => d.kebutuhan).filter(Boolean).join(', ');
@@ -816,6 +832,7 @@ const Reports = () => {
         'Keluhan Utama': r.anamnesis?.anamnesis?.reason || '-',
         'Indeks DMF-T': r.indices?.dmft?.total || 0,
         'Indeks OHI-S': r.indices?.ohis?.total || 0,
+        'Kriteria OHI-S': r.indices?.ohis?.category || ((r.indices?.ohis?.total || 0) <= 1.2 ? 'Baik' : (r.indices?.ohis?.total || 0) <= 3.0 ? 'Sedang' : 'Buruk'),
         'Diagnosis': r.askesgilut?.diagnoses?.map((d: any) => d.kebutuhan).join(', ') || '-',
         'Rencana Perawatan': r.planning?.clientCenteredGoals || '-',
         'Total Billing': r.billing?.total || 0

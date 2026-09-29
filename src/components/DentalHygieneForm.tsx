@@ -27,7 +27,13 @@ import {
   Eye,
   Trash2,
   Mic,
-  Volume2
+  Volume2,
+  Info,
+  BookOpen,
+  HelpCircle,
+  ChevronDown,
+  ChevronUp,
+  Award
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { Odontogram } from './Odontogram';
@@ -70,6 +76,63 @@ export const DentalHygieneForm = () => {
   const [currentRecordId, setCurrentRecordId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [isVoiceAssistantOpen, setIsVoiceAssistantOpen] = useState(false);
+  const [showOHISCriteria, setShowOHISCriteria] = useState(false);
+  const [ohisCriteriaTab, setOhisCriteriaTab] = useState<'kategori' | 'skor' | 'gigi'>('kategori');
+
+  const OHIS_TEETH_CONFIG = [
+    { tooth: 16, jaw: 'RA', region: 'Molar 1 Kanan Atas', surface: 'Bukal', idx: 0 },
+    { tooth: 11, jaw: 'RA', region: 'Insisivus 1 Kanan Atas', surface: 'Labial', idx: 1 },
+    { tooth: 26, jaw: 'RA', region: 'Molar 1 Kiri Atas', surface: 'Bukal', idx: 2 },
+    { tooth: 46, jaw: 'RB', region: 'Molar 1 Kanan Bawah', surface: 'Lingual', idx: 3 },
+    { tooth: 31, jaw: 'RB', region: 'Insisivus 1 Kiri Bawah', surface: 'Labial', idx: 4 },
+    { tooth: 36, jaw: 'RB', region: 'Molar 1 Kiri Bawah', surface: 'Lingual', idx: 5 },
+  ];
+
+  const getOHISCategoryInfo = (total: number) => {
+    if (total <= 1.2) {
+      return {
+        label: 'Baik',
+        range: '0.0 – 1.2',
+        badgeBg: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+        pillBg: 'bg-emerald-500 text-white',
+        accentColor: 'text-emerald-700',
+        description: 'Tingkat kebersihan gigi dan mulut sangat baik (Optimal). Tidak ada akumulasi debris atau kalkulus yang signifikan.',
+        recommendation: 'Pertahankan kebiasaan menyikat gigi 2x sehari dengan pasta berfluoride, kontrol berkala tiap 6 bulan di Puskesmas.'
+      };
+    } else if (total <= 3.0) {
+      return {
+        label: 'Sedang',
+        range: '1.3 – 3.0',
+        badgeBg: 'bg-amber-50 text-amber-800 border-amber-200',
+        pillBg: 'bg-amber-500 text-white',
+        accentColor: 'text-amber-700',
+        description: 'Tingkat kebersihan gigi dan mulut sedang. Terdapat tumpukan debris dan kalkulus pada 1/3 hingga 2/3 permukaan gigi.',
+        recommendation: 'Edukasi teknik menyikat gigi yang tepat (metode Bass), pembersihan karang gigi (Scaling supragingiva), dan dental flossing.'
+      };
+    } else {
+      return {
+        label: 'Buruk',
+        range: '3.1 – 6.0',
+        badgeBg: 'bg-rose-50 text-rose-800 border-rose-200',
+        pillBg: 'bg-rose-500 text-white',
+        accentColor: 'text-rose-700',
+        description: 'Tingkat kebersihan gigi dan mulut buruk. Akumulasi debris tebal dan kalkulus subgingiva masif menutupi > 2/3 permukaan gigi.',
+        recommendation: 'Tindakan Scaling & Root Planing segera, instruksi kebersihan mulut intensif (DHE), serta kontrol ulang evaluasi 1-2 minggu.'
+      };
+    }
+  };
+
+  const getDISubCategoryInfo = (score: number) => {
+    if (score <= 0.6) return { label: 'Baik', range: '0.0 - 0.6', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+    if (score <= 1.8) return { label: 'Sedang', range: '0.7 - 1.8', badge: 'bg-amber-50 text-amber-700 border-amber-200' };
+    return { label: 'Buruk', range: '1.9 - 3.0', badge: 'bg-rose-50 text-rose-700 border-rose-200' };
+  };
+
+  const getCISubCategoryInfo = (score: number) => {
+    if (score <= 0.6) return { label: 'Baik', range: '0.0 - 0.6', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+    if (score <= 1.8) return { label: 'Sedang', range: '0.7 - 1.8', badge: 'bg-amber-50 text-amber-700 border-amber-200' };
+    return { label: 'Buruk', range: '1.9 - 3.0', badge: 'bg-rose-50 text-rose-700 border-rose-200' };
+  };
 
   const DEFAULT_ASKESGILUT = {
     categories: {} as Record<string, string[]>,
@@ -1538,79 +1601,483 @@ export const DentalHygieneForm = () => {
                     </div>
                   </div>
 
-                  {/* OHI-S (DI & CI) */}
-                  <div className="bg-navy-50/30 p-6 rounded-3xl border border-navy/5 space-y-6">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-black text-navy/40 uppercase tracking-[0.2em] flex items-center gap-2">
-                        <Activity size={14} className="text-pink" /> Indeks OHI-S (DI & CI)
-                      </h4>
-                      <div className="flex gap-4">
-                        <div className="px-4 py-2 bg-white border border-navy/5 rounded-xl text-[10px] font-black text-navy uppercase">DI: {formData.indices.ohis.di.toFixed(2)}</div>
-                        <div className="px-4 py-2 bg-white border border-navy/5 rounded-xl text-[10px] font-black text-navy uppercase">CI: {formData.indices.ohis.ci.toFixed(2)}</div>
-                        <div className="px-4 py-2 bg-navy text-gold rounded-xl text-xs font-black">OHI-S: {formData.indices.ohis.total.toFixed(2)}</div>
+                  {/* OHI-S (DI & CI) with Clinical Criteria */}
+                  <div className="bg-white p-6 md:p-7 rounded-2xl border border-slate-200/90 shadow-xs space-y-6">
+                    {/* Header with Title, Scores & Guide Button */}
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-200">
+                            <Activity size={12} className="text-purple-600" /> Standar WHO / Greene & Vermillion
+                          </span>
+                          <span className="text-slate-300">•</span>
+                          <span className="text-xs text-slate-500 font-medium">6 Gigi Indeks (Ramfjord/G&V)</span>
+                        </div>
+                        <h4 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                          Oral Hygiene Index - Simplified (OHI-S)
+                        </h4>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Pengukuran tingkat kebersihan gigi & mulut gabungan Debris Index (DI-S) dan Calculus Index (CI-S).
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* Sub-indices badges */}
+                        {(() => {
+                          const diVal = formData.indices.ohis.di;
+                          const ciVal = formData.indices.ohis.ci;
+                          const totalVal = formData.indices.ohis.total;
+                          const diInfo = getDISubCategoryInfo(diVal);
+                          const ciInfo = getCISubCategoryInfo(ciVal);
+                          const ohisInfo = getOHISCategoryInfo(totalVal);
+
+                          return (
+                            <>
+                              <div className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs flex items-center gap-2">
+                                <span className="text-slate-500 font-medium text-[11px]">DI-S:</span>
+                                <span className="font-mono font-bold text-slate-800">{diVal.toFixed(2)}</span>
+                                <span className={cn("px-1.5 py-0.2 rounded text-[10px] font-semibold border", diInfo.badge)}>
+                                  {diInfo.label}
+                                </span>
+                              </div>
+
+                              <div className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs flex items-center gap-2">
+                                <span className="text-slate-500 font-medium text-[11px]">CI-S:</span>
+                                <span className="font-mono font-bold text-slate-800">{ciVal.toFixed(2)}</span>
+                                <span className={cn("px-1.5 py-0.2 rounded text-[10px] font-semibold border", ciInfo.badge)}>
+                                  {ciInfo.label}
+                                </span>
+                              </div>
+
+                              <div className={cn("px-3.5 py-1.5 rounded-lg text-xs font-bold border flex items-center gap-2 shadow-2xs", ohisInfo.badgeBg)}>
+                                <span className="font-mono">OHI-S: {totalVal.toFixed(2)}</span>
+                                <span className={cn("px-2 py-0.5 rounded text-[11px] font-extrabold uppercase tracking-wide", ohisInfo.pillBg)}>
+                                  {ohisInfo.label}
+                                </span>
+                              </div>
+                            </>
+                          );
+                        })()}
+
+                        <button 
+                          type="button"
+                          onClick={() => setShowOHISCriteria(!showOHISCriteria)}
+                          className={cn(
+                            "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all",
+                            showOHISCriteria 
+                              ? "bg-purple-50 text-purple-700 border-purple-300 shadow-2xs" 
+                              : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-purple-200"
+                          )}
+                        >
+                          <BookOpen size={13} className="text-purple-600" />
+                          <span>Kriteria OHI-S</span>
+                          {showOHISCriteria ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                        </button>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      {/* Debris Index */}
-                      <div className="space-y-4">
-                        <p className="text-[10px] font-black text-navy/30 uppercase tracking-widest text-center">Debris Index (DI)</p>
-                        <div className="grid grid-cols-3 gap-3">
-                          {[16, 11, 26, 46, 31, 36].map((tooth, idx) => (
-                            <div key={tooth} className="space-y-1">
-                              <label className="text-[9px] font-bold text-navy/40 block text-center">{tooth}</label>
-                              <select 
-                                className="w-full p-2 bg-white border border-navy/5 rounded-lg text-xs font-bold text-center appearance-none"
-                                value={formData.indices.ohis.debris[idx]}
-                                onChange={e => {
-                                  const newDebris = [...formData.indices.ohis.debris];
-                                  newDebris[idx] = parseInt(e.target.value);
-                                  const di = newDebris.reduce((a, b) => a + b, 0) / 6;
-                                  const total = di + formData.indices.ohis.ci;
-                                  setFormData({
-                                    ...formData,
-                                    indices: {
-                                      ...formData.indices,
-                                      ohis: { ...formData.indices.ohis, debris: newDebris, di, total }
-                                    }
-                                  });
-                                }}
-                              >
-                                {[0, 1, 2, 3].map(v => <option key={v} value={v}>{v}</option>)}
-                              </select>
+                    {/* Overall OHI-S Category & Clinical Recommendation Banner */}
+                    {(() => {
+                      const ohisTotal = formData.indices.ohis.total;
+                      const catInfo = getOHISCategoryInfo(ohisTotal);
+
+                      return (
+                        <div className={cn("p-4 rounded-xl border transition-all", catInfo.badgeBg)}>
+                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                                  Kriteria Hasil Pemeriksaan:
+                                </span>
+                                <span className={cn("px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide", catInfo.pillBg)}>
+                                  {catInfo.label} ({catInfo.range})
+                                </span>
+                              </div>
+                              <p className="text-xs text-slate-700 font-medium">
+                                {catInfo.description}
+                              </p>
+                              <p className="text-xs text-slate-600 pt-0.5">
+                                <strong className="text-slate-800">Rekomendasi Tindakan:</strong> {catInfo.recommendation}
+                              </p>
                             </div>
-                          ))}
+
+                            {/* Mini Scale Indicator */}
+                            <div className="shrink-0 md:w-60 bg-white/80 p-2.5 rounded-lg border border-slate-200/60 space-y-1.5">
+                              <div className="flex justify-between text-[10px] font-mono font-semibold text-slate-500">
+                                <span>0.0</span>
+                                <span className="text-emerald-700">Baik (≤1.2)</span>
+                                <span className="text-amber-700">Sedang (≤3.0)</span>
+                                <span className="text-rose-700">Buruk (6.0)</span>
+                              </div>
+                              <div className="w-full h-2.5 rounded-full bg-slate-200 overflow-hidden flex relative">
+                                <div className="w-[20%] bg-emerald-500 h-full" title="Baik: 0.0 - 1.2" />
+                                <div className="w-[30%] bg-amber-400 h-full" title="Sedang: 1.3 - 3.0" />
+                                <div className="w-[50%] bg-rose-500 h-full" title="Buruk: 3.1 - 6.0" />
+                                {/* Current value pointer */}
+                                <div 
+                                  className="absolute top-0 bottom-0 w-1.5 bg-slate-900 border-l border-r border-white shadow-sm transition-all"
+                                  style={{ left: `${Math.min(100, Math.max(0, (ohisTotal / 6) * 100))}%` }}
+                                  title={`Nilai OHI-S: ${ohisTotal.toFixed(2)}`}
+                                />
+                              </div>
+                              <p className="text-[10px] text-slate-500 text-center font-mono">
+                                Skor saat ini: <strong className="text-slate-900 font-bold">{ohisTotal.toFixed(2)}</strong> / 6.00
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Collapsible Reference Guide (Kriteria Lengkap) */}
+                    <AnimatePresence>
+                      {showOHISCriteria && (
+                        <motion.div 
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="bg-slate-50/80 rounded-xl border border-slate-200 p-4 space-y-4 overflow-hidden"
+                        >
+                          <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                            <div className="flex items-center gap-2">
+                              <Info size={16} className="text-purple-600" />
+                              <h5 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                                Buku Pedoman Standar Kriteria OHI-S (Greene & Vermillion)
+                              </h5>
+                            </div>
+                            <div className="flex bg-white rounded-lg p-0.5 border border-slate-200 text-xs">
+                              <button
+                                type="button"
+                                onClick={() => setOhisCriteriaTab('kategori')}
+                                className={cn(
+                                  "px-2.5 py-1 rounded font-semibold transition-all",
+                                  ohisCriteriaTab === 'kategori' ? "bg-purple-600 text-white shadow-2xs" : "text-slate-600 hover:text-slate-900"
+                                )}
+                              >
+                                1. Kategori Rentang Nilai
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setOhisCriteriaTab('skor')}
+                                className={cn(
+                                  "px-2.5 py-1 rounded font-semibold transition-all",
+                                  ohisCriteriaTab === 'skor' ? "bg-purple-600 text-white shadow-2xs" : "text-slate-600 hover:text-slate-900"
+                                )}
+                              >
+                                2. Kriteria Skor 0 - 3
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setOhisCriteriaTab('gigi')}
+                                className={cn(
+                                  "px-2.5 py-1 rounded font-semibold transition-all",
+                                  ohisCriteriaTab === 'gigi' ? "bg-purple-600 text-white shadow-2xs" : "text-slate-600 hover:text-slate-900"
+                                )}
+                              >
+                                3. Gigi Indeks & Permukaan
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Tab 1: Kategori Rentang Nilai WHO */}
+                          {ohisCriteriaTab === 'kategori' && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                              <div className="bg-white p-3.5 rounded-lg border border-slate-200 space-y-2">
+                                <h6 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                                  <Award size={14} className="text-purple-600" /> Kriteria Skor Total OHI-S (DI + CI)
+                                </h6>
+                                <table className="w-full text-left text-[11px]">
+                                  <thead>
+                                    <tr className="border-b border-slate-100 text-slate-400 uppercase font-semibold">
+                                      <th className="py-1">Kriteria</th>
+                                      <th className="py-1">Rentang Nilai</th>
+                                      <th className="py-1">Arti Klinis</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-slate-50">
+                                    <tr>
+                                      <td className="py-1.5 font-bold text-emerald-700">Baik (Good)</td>
+                                      <td className="py-1.5 font-mono font-semibold">0.0 – 1.2</td>
+                                      <td className="py-1.5 text-slate-600">Kebersihan mulut prima</td>
+                                    </tr>
+                                    <tr>
+                                      <td className="py-1.5 font-bold text-amber-700">Sedang (Fair)</td>
+                                      <td className="py-1.5 font-mono font-semibold">1.3 – 3.0</td>
+                                      <td className="py-1.5 text-slate-600">Kebersihan mulut sedang, perlu edukasi</td>
+                                    </tr>
+                                    <tr>
+                                      <td className="py-1.5 font-bold text-rose-700">Buruk (Poor)</td>
+                                      <td className="py-1.5 font-mono font-semibold">3.1 – 6.0</td>
+                                      <td className="py-1.5 text-slate-600">Kebersihan mulut buruk, butuh tindakan</td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </div>
+
+                              <div className="bg-white p-3.5 rounded-lg border border-slate-200 space-y-2">
+                                <h6 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                                  <Award size={14} className="text-pink-600" /> Kriteria Masing-Masing Sub-Indeks (DI / CI)
+                                </h6>
+                                <table className="w-full text-left text-[11px]">
+                                  <thead>
+                                    <tr className="border-b border-slate-100 text-slate-400 uppercase font-semibold">
+                                      <th className="py-1">Kriteria</th>
+                                      <th className="py-1">Rentang DI / CI</th>
+                                      <th className="py-1">Penjelasan</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-slate-50">
+                                    <tr>
+                                      <td className="py-1.5 font-bold text-emerald-700">Baik</td>
+                                      <td className="py-1.5 font-mono font-semibold">0.0 – 0.6</td>
+                                      <td className="py-1.5 text-slate-600">Debris / Karang gigi minimal</td>
+                                    </tr>
+                                    <tr>
+                                      <td className="py-1.5 font-bold text-amber-700">Sedang</td>
+                                      <td className="py-1.5 font-mono font-semibold">0.7 – 1.8</td>
+                                      <td className="py-1.5 text-slate-600">Debris / Karang gigi moderat</td>
+                                    </tr>
+                                    <tr>
+                                      <td className="py-1.5 font-bold text-rose-700">Buruk</td>
+                                      <td className="py-1.5 font-mono font-semibold">1.9 – 3.0</td>
+                                      <td className="py-1.5 text-slate-600">Debris / Karang gigi tebal & masif</td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Tab 2: Definisi Skor 0 - 3 */}
+                          {ohisCriteriaTab === 'skor' && (
+                            <div className="bg-white p-3.5 rounded-lg border border-slate-200 overflow-x-auto text-xs">
+                              <table className="w-full text-left text-[11px] border-collapse">
+                                <thead>
+                                  <tr className="border-b border-slate-200 text-slate-500 font-semibold bg-slate-50">
+                                    <th className="p-2 w-16 text-center">Skor</th>
+                                    <th className="p-2 w-1/2">Kriteria Debris Index (DI-S)</th>
+                                    <th className="p-2 w-1/2">Kriteria Calculus Index (CI-S)</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                  <tr>
+                                    <td className="p-2 text-center font-bold text-emerald-700 font-mono text-sm bg-emerald-50/50">0</td>
+                                    <td className="p-2 text-slate-700">
+                                      Tidak ada debris lunak atau pewarnaan ekstrinsik pada permukaan gigi yang diperiksa.
+                                    </td>
+                                    <td className="p-2 text-slate-700">
+                                      Tidak ada karang gigi (kalkulus), baik supragingiva maupun subgingiva.
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td className="p-2 text-center font-bold text-sky-700 font-mono text-sm bg-sky-50/50">1</td>
+                                    <td className="p-2 text-slate-700">
+                                      Debris lunak menutupi <strong>tidak lebih dari 1/3</strong> permukaan servikal gigi, atau terdapat pewarnaan ekstrinsik tanpa debris.
+                                    </td>
+                                    <td className="p-2 text-slate-700">
+                                      Karang gigi supragingiva menutupi <strong>tidak lebih dari 1/3</strong> permukaan servikal gigi yang diperiksa.
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td className="p-2 text-center font-bold text-amber-700 font-mono text-sm bg-amber-50/50">2</td>
+                                    <td className="p-2 text-slate-700">
+                                      Debris lunak menutupi <strong>lebih dari 1/3 tetapi tidak lebih dari 2/3</strong> permukaan gigi yang diperiksa.
+                                    </td>
+                                    <td className="p-2 text-slate-700">
+                                      Karang gigi supragingiva menutupi <strong>lebih dari 1/3 tetapi tidak lebih dari 2/3</strong> permukaan gigi, atau ada bercak kalkulus subgingiva di servikal.
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td className="p-2 text-center font-bold text-rose-700 font-mono text-sm bg-rose-50/50">3</td>
+                                    <td className="p-2 text-slate-700">
+                                      Debris lunak menutupi <strong>lebih dari 2/3</strong> permukaan gigi yang diperiksa.
+                                    </td>
+                                    <td className="p-2 text-slate-700">
+                                      Karang gigi supragingiva menutupi <strong>lebih dari 2/3</strong> permukaan gigi, atau terdapat karang gigi subgingiva yang tebal dan melingkari servikal secara berkesinambungan.
+                                    </td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+
+                          {/* Tab 3: Gigi Indeks & Permukaan Standar */}
+                          {ohisCriteriaTab === 'gigi' && (
+                            <div className="bg-white p-3.5 rounded-lg border border-slate-200 text-xs space-y-3">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
+                                <div className="p-3 bg-purple-50/50 rounded-lg border border-purple-100">
+                                  <h6 className="font-bold text-purple-900 mb-1.5">Rahang Atas (RA)</h6>
+                                  <ul className="space-y-1 text-slate-700">
+                                    <li>• <strong>Gigi 16</strong>: Molar 1 Kanan Atas → Permukaan <strong>Bukal</strong></li>
+                                    <li>• <strong>Gigi 11</strong>: Insisivus 1 Kanan Atas → Permukaan <strong>Labial</strong></li>
+                                    <li>• <strong>Gigi 26</strong>: Molar 1 Kiri Atas → Permukaan <strong>Bukal</strong></li>
+                                  </ul>
+                                </div>
+                                <div className="p-3 bg-pink-50/50 rounded-lg border border-pink-100">
+                                  <h6 className="font-bold text-pink-900 mb-1.5">Rahang Bawah (RB)</h6>
+                                  <ul className="space-y-1 text-slate-700">
+                                    <li>• <strong>Gigi 46</strong>: Molar 1 Kanan Bawah → Permukaan <strong>Lingual</strong></li>
+                                    <li>• <strong>Gigi 31</strong>: Insisivus 1 Kiri Bawah → Permukaan <strong>Labial</strong></li>
+                                    <li>• <strong>Gigi 36</strong>: Molar 1 Kiri Bawah → Permukaan <strong>Lingual</strong></li>
+                                  </ul>
+                                </div>
+                              </div>
+                              <p className="text-[11px] text-slate-500 italic bg-slate-50 p-2 rounded border border-slate-200">
+                                <strong>Catatan Penggantian Gigi Indeks:</strong> Jika gigi 16 tidak ada diganti gigi 17/18; jika 11 tidak ada diganti 21; jika 26 tidak ada diganti 27/28; jika 46 tidak ada diganti 47/48; jika 31 tidak ada diganti 41; jika 36 tidak ada diganti 37/38.
+                              </p>
+                            </div>
+                          )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Tooth Input Tables for DI and CI */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {/* Debris Index (DI-S) */}
+                      <div className="bg-slate-50/70 p-4 rounded-xl border border-slate-200/80 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full bg-purple-500" />
+                            <h5 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                              Debris Index (DI-S)
+                            </h5>
+                          </div>
+                          <span className="text-[11px] font-mono font-bold text-purple-700 bg-white px-2 py-0.5 rounded border border-slate-200">
+                            Rerata DI: {formData.indices.ohis.di.toFixed(2)} ({getDISubCategoryInfo(formData.indices.ohis.di).label})
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2.5">
+                          {OHIS_TEETH_CONFIG.map(({ tooth, surface, region, idx }) => {
+                            const val = formData.indices.ohis.debris[idx];
+
+                            return (
+                              <div key={`debris-${tooth}`} className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-mono font-bold text-xs text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded">
+                                    {tooth}
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 font-medium">
+                                    {surface}
+                                  </span>
+                                </div>
+                                <p className="text-[10px] text-slate-500 truncate" title={region}>{region}</p>
+                                <select 
+                                  className={cn(
+                                    "w-full p-1.5 rounded-md text-xs font-bold text-center border transition-all appearance-none cursor-pointer",
+                                    val === 0 ? "bg-emerald-50 text-emerald-800 border-emerald-200" :
+                                    val === 1 ? "bg-sky-50 text-sky-800 border-sky-200" :
+                                    val === 2 ? "bg-amber-50 text-amber-800 border-amber-200" :
+                                    "bg-rose-50 text-rose-800 border-rose-200"
+                                  )}
+                                  value={val}
+                                  onChange={e => {
+                                    const newDebris = [...formData.indices.ohis.debris];
+                                    newDebris[idx] = parseInt(e.target.value);
+                                    const di = parseFloat((newDebris.reduce((a, b) => a + b, 0) / 6).toFixed(2));
+                                    const ci = formData.indices.ohis.ci;
+                                    const total = parseFloat((di + ci).toFixed(2));
+                                    const category = total <= 1.2 ? 'Baik' : total <= 3.0 ? 'Sedang' : 'Buruk';
+
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      clinical: {
+                                        ...prev.clinical,
+                                        ohis: {
+                                          ...prev.clinical.ohis,
+                                          total,
+                                          category
+                                        }
+                                      },
+                                      indices: {
+                                        ...prev.indices,
+                                        ohis: { ...prev.indices.ohis, debris: newDebris, di, total, category }
+                                      }
+                                    }));
+                                  }}
+                                >
+                                  <option value={0}>0 • Bersih (0)</option>
+                                  <option value={1}>1 • ≤ 1/3 (1)</option>
+                                  <option value={2}>2 • 1/3-2/3 (2)</option>
+                                  <option value={3}>3 • &gt; 2/3 (3)</option>
+                                </select>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
 
-                      {/* Calculus Index */}
-                      <div className="space-y-4">
-                        <p className="text-[10px] font-black text-navy/30 uppercase tracking-widest text-center">Calculus Index (CI)</p>
-                        <div className="grid grid-cols-3 gap-3">
-                          {[16, 11, 26, 46, 31, 36].map((tooth, idx) => (
-                            <div key={tooth} className="space-y-1">
-                              <label className="text-[9px] font-bold text-navy/40 block text-center">{tooth}</label>
-                              <select 
-                                className="w-full p-2 bg-white border border-navy/5 rounded-lg text-xs font-bold text-center appearance-none"
-                                value={formData.indices.ohis.calculus[idx]}
-                                onChange={e => {
-                                  const newCalculus = [...formData.indices.ohis.calculus];
-                                  newCalculus[idx] = parseInt(e.target.value);
-                                  const ci = newCalculus.reduce((a, b) => a + b, 0) / 6;
-                                  const total = formData.indices.ohis.di + ci;
-                                  setFormData({
-                                    ...formData,
-                                    indices: {
-                                      ...formData.indices,
-                                      ohis: { ...formData.indices.ohis, calculus: newCalculus, ci, total }
-                                    }
-                                  });
-                                }}
-                              >
-                                {[0, 1, 2, 3].map(v => <option key={v} value={v}>{v}</option>)}
-                              </select>
-                            </div>
-                          ))}
+                      {/* Calculus Index (CI-S) */}
+                      <div className="bg-slate-50/70 p-4 rounded-xl border border-slate-200/80 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full bg-pink-500" />
+                            <h5 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                              Calculus Index (CI-S)
+                            </h5>
+                          </div>
+                          <span className="text-[11px] font-mono font-bold text-pink-700 bg-white px-2 py-0.5 rounded border border-slate-200">
+                            Rerata CI: {formData.indices.ohis.ci.toFixed(2)} ({getCISubCategoryInfo(formData.indices.ohis.ci).label})
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2.5">
+                          {OHIS_TEETH_CONFIG.map(({ tooth, surface, region, idx }) => {
+                            const val = formData.indices.ohis.calculus[idx];
+
+                            return (
+                              <div key={`calculus-${tooth}`} className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-mono font-bold text-xs text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded">
+                                    {tooth}
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 font-medium">
+                                    {surface}
+                                  </span>
+                                </div>
+                                <p className="text-[10px] text-slate-500 truncate" title={region}>{region}</p>
+                                <select 
+                                  className={cn(
+                                    "w-full p-1.5 rounded-md text-xs font-bold text-center border transition-all appearance-none cursor-pointer",
+                                    val === 0 ? "bg-emerald-50 text-emerald-800 border-emerald-200" :
+                                    val === 1 ? "bg-sky-50 text-sky-800 border-sky-200" :
+                                    val === 2 ? "bg-amber-50 text-amber-800 border-amber-200" :
+                                    "bg-rose-50 text-rose-800 border-rose-200"
+                                  )}
+                                  value={val}
+                                  onChange={e => {
+                                    const newCalculus = [...formData.indices.ohis.calculus];
+                                    newCalculus[idx] = parseInt(e.target.value);
+                                    const di = formData.indices.ohis.di;
+                                    const ci = parseFloat((newCalculus.reduce((a, b) => a + b, 0) / 6).toFixed(2));
+                                    const total = parseFloat((di + ci).toFixed(2));
+                                    const category = total <= 1.2 ? 'Baik' : total <= 3.0 ? 'Sedang' : 'Buruk';
+
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      clinical: {
+                                        ...prev.clinical,
+                                        ohis: {
+                                          ...prev.clinical.ohis,
+                                          total,
+                                          category
+                                        }
+                                      },
+                                      indices: {
+                                        ...prev.indices,
+                                        ohis: { ...prev.indices.ohis, calculus: newCalculus, ci, total, category }
+                                      }
+                                    }));
+                                  }}
+                                >
+                                  <option value={0}>0 • Bersih (0)</option>
+                                  <option value={1}>1 • ≤ 1/3 (1)</option>
+                                  <option value={2}>2 • 1/3-2/3 (2)</option>
+                                  <option value={3}>3 • &gt; 2/3 (3)</option>
+                                </select>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     </div>
